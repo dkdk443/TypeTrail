@@ -9,14 +9,7 @@
   const beforeIdx = $derived(ex.lines.map((_, i) => i).filter((i) => cur === undefined || i < cur));
   const afterIdx = $derived(ex.lines.map((_, i) => i).filter((i) => cur !== undefined && i > cur));
 
-  const palette = $derived.by(() => {
-    const tokens: string[] = [];
-    ex.lines.forEach((l) => l.t.forEach((t) => tokens.push(t)));
-    ex.pool.forEach((t) => tokens.push(t));
-    const uniq = Array.from(new Set(tokens));
-    uniq.sort((a, b) => a.length - b.length || a.localeCompare(b));
-    return uniq;
-  });
+  const palette = $derived(game.paletteTokens());
 
   const feedbackText = $derived(
     game.status === 'ng'

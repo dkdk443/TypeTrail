@@ -72,6 +72,11 @@ class GameState {
     else this.sl += 1;
   }
 
+  /** Advances the slide step without leaving to the exercise screen (desktop: slide + exercise are shown together). */
+  advanceSlide() {
+    if (this.sl < this.ch.slides.length - 1) this.sl += 1;
+  }
+
   setVariant(v: Variant) {
     this.variant = v;
   }
@@ -161,6 +166,16 @@ class GameState {
 
     if (line.post) tok(line.post).forEach((c) => chips.push({ kind: 'code', text: c.text, tk: c.kind }));
     return chips;
+  }
+
+  /** All fillable tokens for the current exercise: correct answers plus decoys, deduped, shortest/alphabetical first. */
+  paletteTokens(ex: ExerciseSpec = this.ex): string[] {
+    const tokens: string[] = [];
+    ex.lines.forEach((l) => l.t.forEach((t) => tokens.push(t)));
+    ex.pool.forEach((t) => tokens.push(t));
+    const uniq = Array.from(new Set(tokens));
+    uniq.sort((a, b) => a.length - b.length || a.localeCompare(b));
+    return uniq;
   }
 }
 
