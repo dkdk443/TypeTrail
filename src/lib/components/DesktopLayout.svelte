@@ -197,15 +197,10 @@
 <style>
   .frame {
     width: 100%;
-    max-width: 1320px;
-    height: 840px;
-    border-radius: 20px;
+    height: 100%;
     overflow: hidden;
     position: relative;
     background: var(--sf);
-    box-shadow:
-      0 40px 80px -24px oklch(0.05 0.05 266 / 0.45),
-      0 0 0 1px var(--bd);
     display: flex;
     flex-direction: column;
     color: var(--fg);
