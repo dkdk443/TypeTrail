@@ -3,6 +3,14 @@ import type { ExerciseSpec } from './types';
 import { tok, type TokenKind } from './highlight';
 import type { ThemeKey } from './theme';
 
+function permutations<T>(items: T[]): T[][] {
+  if (items.length <= 1) return [items];
+  return items.flatMap((item, i) => {
+    const rest = [...items.slice(0, i), ...items.slice(i + 1)];
+    return permutations(rest).map((p) => [item, ...p]);
+  });
+}
+
 export type Screen = 'map' | 'slide' | 'ex';
 export type Status = 'idle' | 'ok' | 'ng';
 export type Variant = 'A' | 'B';
@@ -12,7 +20,7 @@ export type LineChip =
   | { kind: 'filled'; text: string; state: 'normal' | 'locked' | 'bad' }
   | { kind: 'slot'; state: 'cur-first' | 'cur-rest' | 'idle' };
 
-class GameState {
+export class GameState {
   screen = $state<Screen>('map');
   ci = $state(0);
   sl = $state(0);
@@ -31,10 +39,30 @@ class GameState {
     return ex.lines.map((l, i) => (l.t.length ? i : -1)).filter((i) => i >= 0);
   }
 
+  /**
+   * Full token sequences accepted as correct for a line. Ordinarily just
+   * `[t]`, but a union (`unionAt` set) has no canonical member order in
+   * real TypeScript, so every permutation of its members is also accepted.
+   */
+  private accepted(t: string[], unionAt?: number): string[][] {
+    if (unionAt === undefined) return [t];
+    const prefix = t.slice(0, unionAt);
+    const values = t.slice(unionAt).filter((_, k) => k % 2 === 0);
+    return permutations(values).map((p) => [
+      ...prefix,
+      ...p.flatMap((v, k) => (k === 0 ? [v] : ['|', v])),
+    ]);
+  }
+
+  private matches(b: string[], t: string[], unionAt?: number): boolean {
+    if (b.length !== t.length) return false;
+    return this.accepted(t, unionAt).some((seq) => b.every((x, k) => x === seq[k]));
+  }
+
   isLocked(i: number, ex: ExerciseSpec = this.ex): boolean {
     const b = this.built[i] || [];
-    const t = ex.lines[i].t;
-    return b.length === t.length && b.every((x, k) => x === t[k]);
+    const line = ex.lines[i];
+    return this.matches(b, line.t, line.unionAt);
   }
 
   cur(ex: ExerciseSpec = this.ex): number | undefined {
@@ -98,13 +126,13 @@ class GameState {
     const arr = (built[i] || []).slice();
     arr.push(token);
     built[i] = arr;
-    const t = this.ex.lines[i].t;
-    if (arr.length < t.length) {
+    const line = this.ex.lines[i];
+    if (arr.length < line.t.length) {
       this.built = built;
       this.status = 'idle';
       return;
     }
-    const ok = arr.every((x, k) => x === t[k]);
+    const ok = this.matches(arr, line.t, line.unionAt);
     this.built = built;
     if (!ok) {
       this.status = 'ng';

@@ -10,7 +10,7 @@ export interface RichSeg {
   code: boolean;
 }
 
-const KW = /^(let|const|function|interface|return|type|typeof|new|class|extends|implements|export|import|if|else|switch|case|private|public|protected|readonly|as|keyof)$/;
+const KW = /^(let|const|function|interface|return|type|typeof|new|class|extends|implements|export|import|if|else|switch|case|private|public|protected|readonly|as|keyof|abstract|super|static)$/;
 
 /** Tokenizes a line of TS-ish code into colorable chips: strings, numbers, comments, keywords, punctuation. */
 export function tok(text: string): CodeChip[] {

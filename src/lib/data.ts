@@ -3,8 +3,8 @@ import type { Chapter, LineSpec } from './types';
 // Lesson content tracks the chapter order of サバイバルTypeScript (typescriptbook.jp):
 // 値・型・変数 → オブジェクト指向 → 型の再利用 → ジェネリクス.
 
-function L(pre: string, t: string[] = [], post = ''): LineSpec {
-  return { pre, t, post };
+function L(pre: string, t: string[] = [], post = '', unionAt?: number): LineSpec {
+  return { pre, t, post, unionAt };
 }
 
 export const DATA: Chapter[] = [
@@ -44,7 +44,7 @@ export const DATA: Chapter[] = [
         note: 'リテラル型は enum の代わりとしてもよく使われます。文字列のまま比較できるので扱いやすいです。' }
     ],
     ex: { file: 'status.ts', goal: 'リテラル型のユニオンで Status を定義しよう',
-      lines: [ L('type Status = ', ['"idle"', '|', '"loading"', '|', '"done"'], ';'),
+      lines: [ L('type Status = ', ['"idle"', '|', '"loading"', '|', '"done"'], ';', 0),
                L('let current', [':', 'Status'], ' = "idle";'),
                L('function next(s: Status)', [':', 'Status'], ' {'),
                L('  return s ', ['===', '"idle"'], ' ? "loading" : "done";'),
@@ -112,7 +112,7 @@ export const DATA: Chapter[] = [
         note: 'if を抜けた後は number だと確定するので、toFixed が使えます。' }
     ],
     ex: { file: 'guard.ts', goal: 'ユニオン型を typeof で絞り込もう',
-      lines: [ L('function show(v', [':', 'string', '|', 'number'], ') {'),
+      lines: [ L('function show(v', [':', 'string', '|', 'number'], ') {', 1),
                L('  if (', ['typeof', 'v', '===', '"string"'], ') {'),
                L('    return v.toUpperCase();'),
                L('  }'),
@@ -136,7 +136,7 @@ export const DATA: Chapter[] = [
     ex: { file: 'shape.ts', goal: '判別可能なユニオン型で面積を計算しよう',
       lines: [ L('interface Circle { kind', [':', '"circle"'], '; radius: number; }'),
                L('interface Square { kind', [':', '"square"'], '; side: number; }'),
-               L('type Shape', ['=', 'Circle', '|', 'Square'], ';'),
+               L('type Shape', ['=', 'Circle', '|', 'Square'], ';', 1),
                L('function area(shape: Shape)', [':', 'number'], ' {'),
                L('  switch (shape.kind) {'),
                L('    case "circle": return Math.PI * shape.radius ** 2;'),
@@ -214,7 +214,65 @@ export const DATA: Chapter[] = [
       hint: 'クラスが interface を満たすときは implements。メソッドの戻り値は string です。',
       out: ['✓ 型チェックを通過しました', 'new User("ada").greet() → "hi, ada"'] } },
 
-  { num: '10', title: 'ジェネリクス入門', sub: '型そのものを引数として渡す',
+  { num: '10', title: 'アクセス修飾子と readonly', sub: '公開範囲と書き換え不可を約束する',
+    slides: [
+      { kicker: 'STEP 1', heading: '外から触れる範囲を決める「アクセス修飾子」',
+        body: ['クラスのプロパティやメソッドには public・private・protected をつけて、外から触れてよい範囲を決められます。',
+               '何もつけなければ public 扱いになります。'],
+        code: ['class Wallet {', '  private balance: number = 0;', '  deposit(amount: number) {', '    this.balance += amount;', '  }', '}'],
+        note: '`private` は同じクラスの中だけ、`protected` はそのクラスと継承先のクラスの中まで、`public` はどこからでもアクセスできます。' },
+      { kicker: 'STEP 2', heading: '書き換えさせたくないなら readonly',
+        body: ['コンストラクタで一度だけ値を入れて、あとは変更させたくないプロパティには readonly をつけます。',
+               'アクセス修飾子と組み合わせて `private readonly owner: string` のようにも書けます。'],
+        code: ['class User {', '  readonly id: string;', '  constructor(id: string) {', '    this.id = id;', '  }', '}', 'const u = new User("u1");', 'u.id = "u2"; // ← ここで怒られる'],
+        note: 'readonly はコンパイル時のチェックです。実行時に書き換えを止めているわけではありません。' }
+    ],
+    ex: { file: 'wallet.ts', goal: 'アクセス修飾子と readonly で残高を守ろう',
+      lines: [ L('class Wallet {'),
+               L('  ', ['private', 'balance'], ': number;'),
+               L('  ', ['private', 'readonly', 'owner'], ': string;'),
+               L('  constructor(owner: string) {'),
+               L('    this.owner = owner;'),
+               L('    this.balance = 0;'),
+               L('  }'),
+               L('  deposit(amount: number)', [':', 'void'], ' {'),
+               L('    this.balance += amount;'),
+               L('  }'), L('}') ],
+      pool: ['public', 'protected', 'static', 'any', 'number'],
+      hint: 'balance は private、owner は書き換え禁止にしたいので private のあとに readonly を続けます。戻り値がないメソッドは void です。',
+      out: ['✓ 型チェックを通過しました', 'new Wallet("ada").deposit(100)'] } },
+
+  { num: '11', title: '継承と抽象クラス', sub: '共通の振る舞いを親クラスにまとめる',
+    slides: [
+      { kicker: 'STEP 1', heading: 'extends で親クラスの機能を引き継ぐ',
+        body: ['クラスは `extends` で他のクラスを継承できます。親クラスのプロパティやメソッドをそのまま使えます。',
+               '親のコンストラクタを呼ぶには `super(...)` を使います。'],
+        code: ['class Animal {', '  constructor(public name: string) {}', '  speak() { return "..."; }', '}', 'class Dog extends Animal {', '  speak() { return `${this.name}: bow!`; }', '}'],
+        note: 'サブクラスのコンストラクタの中で `super()` を呼ぶ前は this を使えません。' },
+      { kicker: 'STEP 2', heading: '中身を持たない「約束」だけのクラス：抽象クラス',
+        body: ['`abstract class` は new できません。共通の実装をまとめつつ、一部のメソッドをサブクラスに実装させたいときに使います。',
+               '`abstract` を付けたメソッドは中身を書かず、サブクラス側で実装します。'],
+        code: ['abstract class Shape {', '  abstract area(): number;', '  describe() { return `area: ${this.area()}`; }', '}', 'class Circle extends Shape {', '  constructor(private radius: number) { super(); }', '  area() { return Math.PI * this.radius ** 2; }', '}'],
+        note: '抽象クラスは interface と似ていますが、実装済みのメソッド（ここでは describe）も一緒に持たせられるのが違いです。' }
+    ],
+    ex: { file: 'shapes.ts', goal: '抽象クラスを継承して面積を計算しよう',
+      lines: [ L('', ['abstract', 'class'], ' Shape {'),
+               L('  ', ['abstract'], ' area(): number;'),
+               L('  describe()', [':', 'string'], ' {'),
+               L('    return `area: ${this.area()}`;'),
+               L('  }'), L('}'),
+               L('class Square', ['extends', 'Shape'], ' {'),
+               L('  constructor(private side: number) {'),
+               L('    super();'),
+               L('  }'),
+               L('  area()', [':', 'number'], ' {'),
+               L('    return this.side ** 2;'),
+               L('  }'), L('}') ],
+      pool: ['interface', 'implements', 'protected', 'void', 'static'],
+      hint: '抽象クラスは abstract class、抽象メソッドは先頭に abstract だけをつけます。Square は Shape を継承するので extends Shape。',
+      out: ['✓ 型チェックを通過しました', 'new Square(4).describe() → "area: 16"'] } },
+
+  { num: '12', title: 'ジェネリクス入門', sub: '型そのものを引数として渡す',
     slides: [
       { kicker: 'STEP 1', heading: 'any にすると、型が消える',
         body: ['配列の先頭を返す関数を `any` で書くと、呼び出し側で型が分からなくなります。せっかくの補完も効きません。'],
@@ -229,12 +287,12 @@ export const DATA: Chapter[] = [
     ex: { file: 'generic.ts', goal: '型を受け取る関数を書こう',
       lines: [ L('function first', ['<', 'T', '>'], '(items: T[]): T | undefined {'),
                L('  return items[0];'), L('}'),
-               L('const s', [':', 'string', '|', 'undefined'], ' = first(tags);') ],
+               L('const s', [':', 'string', '|', 'undefined'], ' = first(tags);', 1) ],
       pool: ['any', 'K', '[', ']', 'null', 'number'],
       hint: '山かっこで型を受け取ります。最後の行は first(tags) が返しうる型をそのまま書きます。',
       out: ['✓ 型チェックを通過しました', 'first(["ts","js"]) → "ts"'] } },
 
-  { num: '11', title: '型引数の制約と keyof', sub: '「どんな型でもいい」を少しだけ絞る',
+  { num: '13', title: '型引数の制約と keyof', sub: '「どんな型でもいい」を少しだけ絞る',
     slides: [
       { kicker: 'STEP 1', heading: '「どんな型でもいい」を少しだけ絞る',
         body: ['ジェネリクスの型変数 T は、そのままだと本当に何でも受け取れてしまいます。`extends` で制約をつけると、必要なプロパティを持つ型だけに絞れます。'],
@@ -255,7 +313,7 @@ export const DATA: Chapter[] = [
       hint: 'K を制約するには T のキー一覧、つまり keyof T を使います。',
       out: ['✓ 型チェックを通過しました', 'get(user, "name") → "ada"'] } },
 
-  { num: '12', title: 'ユーティリティ型で楽をする', sub: '型から型を作る',
+  { num: '14', title: 'ユーティリティ型で楽をする', sub: '型から型を作る',
     slides: [
       { kicker: 'STEP 1', heading: '毎回書かなくても、型から型を作れる',
         body: ['TypeScript には既存の型を変形させるユーティリティ型が標準で用意されています。よく使うのは Partial・Pick・Omit の3つです。'],
@@ -275,7 +333,55 @@ export const DATA: Chapter[] = [
       hint: '全部省略可 → Partial。一部だけ残す → Pick。一部だけ除く → Omit。',
       out: ['✓ 型チェックを通過しました', 'DraftUser = { id?, name?, email? }'] } },
 
-  { num: '13', title: 'JS を TS に書きかえる', sub: '仕上げ：実務っぽいコードで練習',
+  { num: '15', title: '配列メソッドの型を読む', sub: 'map・filter・reduce に型を通す',
+    slides: [
+      { kicker: 'STEP 1', heading: 'map・filter は「型を変えながら配列を返す」',
+        body: ['`map` は `Array<T>` を `Array<U>` に変換します。コールバックの戻り値の型がそのまま新しい配列の要素の型になります。',
+               '`filter` は要素を絞り込むだけなので、要素の型は変わりません。'],
+        code: ['const nums = [1, 2, 3];', 'const doubled = nums.map((n) => n * 2); // number[]', 'const even = nums.filter((n) => n % 2 === 0); // number[]'],
+        note: '`map` と `filter` は自分でジェネリクスを書かなくても、TypeScript が引数から型を推論してくれます。' },
+      { kicker: 'STEP 2', heading: 'reduce は初期値の型が結果の型を決める',
+        body: ['`reduce` はコールバックの戻り値と初期値の型が一致している必要があります。初期値の型が、最終的に reduce が返す型になります。',
+               '初期値を省略すると畳み込みの型が配列の要素型に固定されてしまうので、集計処理では初期値を明示するのが安全です。'],
+        code: ['const prices = [100, 200, 300];', 'const total = prices.reduce(', '  (sum, price) => sum + price,', '  0', ');'],
+        note: '`reduce<U>(fn, initial: U): U` のようにジェネリクスで書くと分かりやすいですが、たいていは初期値から自動で推論されます。' }
+    ],
+    ex: { file: 'temps.ts', goal: '配列メソッドに型を通して合計を出そう',
+      lines: [ L('function sumPositive(temps: number[])', [':', 'number'], ' {'),
+               L('  return temps'),
+               L('    .', ['filter'], '((t) => t > 0)'),
+               L('    .', ['reduce'], '((sum, t) => sum + t, 0);'),
+               L('}') ],
+      pool: ['map', 'forEach', 'find', 'some', 'string'],
+      hint: '0より大きい値だけ残すのは filter、合計にまとめるのは reduce です。戻り値は数値なので number。',
+      out: ['✓ 型チェックを通過しました', 'sumPositive([3, -1, 5]) → 8'] } },
+
+  { num: '16', title: 'Promise<T> と async/await', sub: '非同期処理の結果を型で表す',
+    slides: [
+      { kicker: 'STEP 1', heading: '非同期の結果は Promise<T> に包まれる',
+        body: ['非同期関数は値をそのまま返さず、「あとで解決される箱」である `Promise<T>` を返します。T の部分に実際に解決される値の型を書きます。',
+               '`async function` をつけて定義した関数は、戻り値の型を書かなくても自動的に Promise<...> として推論されます。'],
+        code: ['function fetchName(): Promise<string> {', '  return Promise.resolve("ada");', '}'],
+        note: '`Promise<void>` は「何も値を返さない非同期処理」を表すのによく使われます。' },
+      { kicker: 'STEP 2', heading: 'await で中身を取り出す',
+        body: ['`await` をつけると Promise が解決されるまで待ち、中身の値（T）を直接受け取れます。await は async 関数の中でしか使えません。',
+               'エラーは Promise の reject として伝わるので、try/catch で受け止めます。'],
+        code: ['async function getName(): Promise<string> {', '  try {', '    const name = await fetchName();', '    return name;', '  } catch (e) {', '    return "unknown";', '  }', '}'],
+        note: 'await した式の型はもとの Promise<T> の T になります。await 自体が Promise を返すわけではありません。' }
+    ],
+    ex: { file: 'greet-async.ts', goal: 'async/await で非同期関数に型をつけよう',
+      lines: [ L('async function fetchName(id: number)', [':', 'Promise<string>'], ' {'),
+               L('  return Promise.resolve("ada");'),
+               L('}'),
+               L('async function greet(id: number)', [':', 'Promise<string>'], ' {'),
+               L('  const name = ', ['await'], ' fetchName(id);'),
+               L('  return `hi, ${name}`;'),
+               L('}') ],
+      pool: ['Promise<void>', 'sync', 'yield', 'then', 'number'],
+      hint: '非同期関数の戻り値は Promise<中身の型>。中の値を取り出すときは await をつけます。',
+      out: ['✓ 型チェックを通過しました', 'await greet(1) → "hi, ada"'] } },
+
+  { num: '17', title: 'JS を TS に書きかえる', sub: '仕上げ：実務っぽいコードで練習',
     slides: [
       { kicker: 'STEP 1', heading: 'いつもの reduce に、型をつける',
         body: ['ここまでの道具で、実際の JS 関数を書きかえます。まずは対象のコードを見てみましょう。'],
