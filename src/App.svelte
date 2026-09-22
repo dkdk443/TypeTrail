@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { game } from './lib/gameState.svelte';
   import { themeVarsStyle } from './lib/theme';
+  import { isUnlocked, parseUrl, urlFor } from './lib/router';
   import MapScreen from './lib/components/MapScreen.svelte';
   import SlideScreen from './lib/components/SlideScreen.svelte';
   import ExerciseScreen from './lib/components/ExerciseScreen.svelte';
@@ -11,12 +12,44 @@
   const DESKTOP_QUERY = '(min-width: 1040px)';
   let isDesktop = $state(false);
 
+  function applyRoute(path: string) {
+    const route = parseUrl(path);
+    if (route.ci !== null && isUnlocked(route.ci, game.done[route.trail])) {
+      game.openChapter(route.ci, route.trail);
+      if (route.screen === 'ex') game.toEx();
+    } else {
+      game.setTrail(route.trail);
+    }
+  }
+
+  // Resolve the URL the app was loaded with before the first render, so a
+  // deep link (or a reload) lands on the right trail/chapter instead of the map.
+  applyRoute(location.pathname);
+  const canonical = urlFor(game.trail, game.screen, game.ci);
+  if (location.pathname !== canonical) history.replaceState(null, '', canonical);
+
   onMount(() => {
     const mq = window.matchMedia(DESKTOP_QUERY);
     isDesktop = mq.matches;
     const onChange = (e: MediaQueryListEvent) => (isDesktop = e.matches);
     mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
+
+    const onPopState = () => applyRoute(location.pathname);
+    window.addEventListener('popstate', onPopState);
+
+    return () => {
+      mq.removeEventListener('change', onChange);
+      window.removeEventListener('popstate', onPopState);
+    };
+  });
+
+  // Any in-app navigation (map -> chapter, slide -> exercise, next chapter, back
+  // to map, ...) changes game.screen/game.ci, which pushes a matching URL here.
+  // A transition that originated from applyRoute() above already matches the
+  // current URL, so this is a no-op for popstate-driven changes.
+  $effect(() => {
+    const url = urlFor(game.trail, game.screen, game.ci);
+    if (location.pathname !== url) history.pushState(null, '', url);
   });
 
   const themeStyle = $derived(themeVarsStyle(game.theme));
