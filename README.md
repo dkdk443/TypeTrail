@@ -1,48 +1,60 @@
-# Svelte + TS + Vite
-
-This template should help get you started developing with Svelte and TypeScript in Vite.
-
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
-
-## Need an official Svelte framework?
-
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
-
-## Technical considerations
-
-**Why use this over SvelteKit?**
-
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
-
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
-
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `allowJs` in the TS template?**
-
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
-
-**Why is HMR not preserving my local component state?**
-
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
-
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
-
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
-```
 # TypeTrail
+
+タップだけでコードを組み立てながら、TypeScript を楽しく学べる学習アプリです。
+
+🔗 **Demo**: https://type-trail-chi.vercel.app/
+🔗 **Repo**: https://github.com/dkdk443/TypeTrail
+
+<!-- ここにスクリーンショットを貼る予定 -->
+<!-- ![screenshot](./docs/screenshot.png) -->
+
+## なぜ作ったのか
+
+参考書や動画で TypeScript を「読む」学習はしていたものの、実際に手を動かして書かないと身につかないと感じていました。とはいえ環境構築なしで気軽に、ゲーム感覚で繰り返し練習できる教材が欲しかったので、自分で作ることにしました。
+
+パレットに並んだトークン（キーワードや記号）をタップして正しい順番に並べる、という「入力のハードルを極限まで下げたタイピングゲーム」にすることで、**文法を覚えることより「型がどう並ぶか」を体に馴染ませること**に集中できるようにしています。
+
+## 何を作ったのか
+
+- **TypeTrail**: [サバイバルTypeScript](https://typescriptbook.jp/) の章立てに沿った、全 15 章の TypeScript 学習コース（型注釈・型推論から始まり、ユニオン型、クラス、ジェネリクス、ユーティリティ型まで）
+- **JSTrail**: TypeScript に入る前に押さえておきたい `map` / `filter` / `reduce` や `Promise` / `async-await` など、素の JavaScript を復習する 2 章構成のサブコース
+- 章はさらに複数の **STEP** に分かれており、各 STEP は「短い解説スライド → その場でタップして解く小さな演習」の 1 セット。読んで終わりにせず、必ず手を動かしてから次に進む構成にしています
+- スマホ幅ではマップ画面から章を選んでステップごとに進む一本道の UI、PC 幅（1040px 以上）ではサイドバー・解説・演習を 1 画面にまとめたデスクトップ向けレイアウトに自動で切り替わります
+- 進捗（クリア済みの章）は `localStorage` に保存され、リロードしても消えません。章・演習の URL には直接リンクでき（`/ch/3/ex` など）、リロードしても同じ場所に戻れます
+
+## どうやって作ったのか
+
+- **Svelte 5 + TypeScript + Vite** で構築したクライアントオンリーの SPA（バックエンドなし）
+- 状態管理は Svelte 5 の Runes（`$state` / `$derived`）を使った単一のシングルトンクラス `GameState` に集約。現在の章・ステップ・入力途中のトークン列・正誤判定など、アプリの状態はすべてここに一元化し、モバイル用・デスクトップ用の 2 つの UI ツリーが同じ状態を読みに行く設計にしています
+- ルーティングは SPA 用の軽量な自前実装（History API を直接叩く純粋関数群）で、フレームワークのルーターに頼らず必要最小限に留めました
+- コードのシンタックスハイライトやユニオン型の順不同判定など、学習コンテンツ特有のロジックも自前で実装
+- **Vitest によるユニットテスト**（117 件）で、全トレイル・全章・全ステップが「タップして解ける」ことを自動検証。新しい章やステップを追加すると自動的にテスト対象に含まれるようにしてあるので、コンテンツを増やすたびに壊れていないか手動で確認する手間がありません
+- Vercel にデプロイ（`vercel.json` で SPA のディープリンクを `index.html` にリライト）
+
+## 工夫した点
+
+- **「読む」と「解く」を章単位ではなくステップ単位で交互に配置**したことで、長い解説を一気に読んでから演習に入る従来のドリル形式より、集中力が続きやすい構成にしました
+- **正解判定を厳密な一致だけにせず、ユニオン型 (`A | B | C`) はメンバーの並び順を問わず正解にする**など、「実務では意味が同じなら書き方は自由」という TypeScript らしい曖昧さもきちんと拾えるようにしています
+- 状態を `$derived` の連鎖（`trail → chapters → ch → step → ex`）で組んだことで、トレイルや章を切り替えるだけで表示すべき内容がすべて自動的に追従する設計にし、UI 側で同期を取るコードを書かずに済むようにしました
+- モバイルとデスクトップで別々の画面コンポーネントを用意しつつ、状態とロジックは完全に共通化。見た目の実装だけを画面幅で出し分けることで、ロジックの二重メンテを避けています
+- TypeScript の学習コースとは別に **JSTrail（素の JS 復習コース）** を用意し、テーマカラーも別に割り当てることで、「TS の前に JS の基礎を固めたい人」もつまずかずに入れる導線を作りました
+
+## 使用技術
+
+| 分類 | 技術 |
+| --- | --- |
+| フレームワーク | Svelte 5 (Runes) |
+| 言語 | TypeScript |
+| ビルドツール | Vite |
+| テスト | Vitest |
+| ホスティング | Vercel |
+
+## セットアップ
+
+```bash
+npm install
+npm run dev      # 開発サーバー起動
+npm test         # ユニットテスト実行
+npm run check    # 型チェック（svelte-check + tsc）
+npm run build    # 本番ビルド
+```
