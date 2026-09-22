@@ -7,26 +7,81 @@ function isKind<K extends LineChip['kind']>(kind: K) {
 }
 
 // These tests exercise chapter 0 ("型注釈と型推論") directly, since its
-// exact tokens are known and stable. Cross-chapter content invariants
-// (pool/answer collisions, "can every chapter actually be solved") live
-// in data.test.ts instead, so this file stays decoupled from lesson
+// exact tokens are known and stable. Cross-chapter/cross-step content
+// invariants (pool/answer collisions, "can every step actually be solved")
+// live in data.test.ts instead, so this file stays decoupled from lesson
 // content edits as much as possible.
-const ex0 = DATA[0].ex;
+//
+// A fresh GameState defaults to chapter 0's STEP 1 (a single fillable line:
+// `let userName: string = "ada";`). Tests that need a step with more than
+// one fillable line instead use chapter 0's STEP 2 (`level` and `up`), via
+// `ex0`.
+const step1Ex = DATA[0].steps[0].ex;
+const ex0 = DATA[0].steps[1].ex;
 
 describe('GameState: initial state', () => {
   it('starts on the map with nothing done', () => {
     const g = new GameState();
     expect(g.screen).toBe('map');
     expect(g.ci).toBe(0);
-    expect(g.done).toEqual({});
+    expect(g.done).toEqual({ ts: {}, js: {} });
     expect(g.celebrating).toBe(false);
   });
 
-  it('ch/ex getters track the current chapter index', () => {
+  it('ch/step/ex getters track the current chapter and step index', () => {
     const g = new GameState();
     g.ci = 2;
     expect(g.ch).toBe(DATA[2]);
-    expect(g.ex).toBe(DATA[2].ex);
+    g.sl = 1;
+    expect(g.step).toBe(DATA[2].steps[1]);
+    expect(g.ex).toBe(DATA[2].steps[1].ex);
+  });
+});
+
+/** Solves every step of the current chapter in order, via reveal(). */
+function solveChapter(g: GameState) {
+  for (;;) {
+    while (g.cur() !== undefined) g.reveal();
+    if (g.isLastStep()) break;
+    g.nextStep();
+  }
+}
+
+describe('GameState: trails', () => {
+  it('starts on TypeTrail', () => {
+    const g = new GameState();
+    expect(g.trail).toBe('ts');
+    expect(g.chapters).toBe(DATA);
+  });
+
+  it('setTrail switches chapters/theme and goes to that trail\'s map', () => {
+    const g = new GameState();
+    g.setTrail('js');
+    expect(g.trail).toBe('js');
+    expect(g.chapters).not.toBe(DATA);
+    expect(g.theme).toBe('JSイエロー');
+    expect(g.screen).toBe('map');
+  });
+
+  it('openChapter can switch trail and chapter together', () => {
+    const g = new GameState();
+    g.openChapter(1, 'js');
+    expect(g.trail).toBe('js');
+    expect(g.ci).toBe(1);
+    expect(g.screen).toBe('slide');
+  });
+
+  it('progress is tracked separately per trail', () => {
+    const g = new GameState();
+    g.openChapter(0, 'ts');
+    solveChapter(g);
+    expect(g.done.ts[0]).toBe(true);
+    expect(g.done.js[0]).toBeUndefined();
+
+    g.openChapter(0, 'js');
+    solveChapter(g);
+    expect(g.done.js[0]).toBe(true);
+    expect(g.done.ts[0]).toBe(true); // untouched by the js completion
   });
 });
 
@@ -45,31 +100,36 @@ describe('GameState: navigation', () => {
     expect(g.celebrating).toBe(false);
   });
 
-  it('nextSlide advances through slide steps, then falls through to the exercise screen', () => {
+  it('toEx leaves the slide for this step\'s exercise', () => {
     const g = new GameState();
     g.openChapter(0);
-    expect(DATA[0].slides.length).toBe(2);
-    g.nextSlide();
-    expect(g.sl).toBe(1);
-    expect(g.screen).toBe('slide');
-    g.nextSlide();
+    g.toEx();
     expect(g.screen).toBe('ex');
+    expect(g.sl).toBe(0); // still the same step; toEx doesn't advance sl
   });
 
-  it('advanceSlide moves forward but stops at the last slide (desktop: no screen change)', () => {
+  it('isLastStep is true only on a chapter\'s final step', () => {
+    const g = new GameState();
+    g.openChapter(0); // chapter 0 has 3 steps
+    expect(g.isLastStep()).toBe(false);
+    g.sl = 1;
+    expect(g.isLastStep()).toBe(false);
+    g.sl = 2;
+    expect(g.isLastStep()).toBe(true);
+  });
+
+  it('nextStep advances to the next step\'s slide and resets exercise state', () => {
     const g = new GameState();
     g.openChapter(0);
-    g.advanceSlide();
-    expect(g.sl).toBe(1);
-    g.advanceSlide();
+    g.toEx();
+    g.tap(':');
+    g.hint = true;
+    g.nextStep();
     expect(g.sl).toBe(1);
     expect(g.screen).toBe('slide');
-  });
-
-  it('prevSlide never goes below 0', () => {
-    const g = new GameState();
-    g.prevSlide();
-    expect(g.sl).toBe(0);
+    expect(g.built).toEqual([]);
+    expect(g.status).toBe('idle');
+    expect(g.hint).toBe(false);
   });
 
   it('toMap closes the celebration overlay too', () => {
@@ -120,8 +180,10 @@ describe('GameState: tap / backspace / reveal / finish', () => {
 
   it('tap() locks the line and advances cur() on a correct sequence', () => {
     const g = new GameState();
+    g.ci = 0;
+    g.sl = 1; // chapter 0 STEP 2 has 2 fillable lines
     g.tap(':');
-    g.tap('string');
+    g.tap('number');
     expect(g.status).toBe('ok');
     expect(g.isLocked(0)).toBe(true);
     expect(g.cur()).toBe(1);
@@ -129,7 +191,7 @@ describe('GameState: tap / backspace / reveal / finish', () => {
 
   it('tap() flags ng on a wrong final token, without discarding the built tokens', () => {
     const g = new GameState();
-    g.tap(':'); // correct so far
+    g.tap(':'); // correct so far (STEP 1: userName)
     g.tap('boolean'); // wrong: line wants ':', 'string'
     expect(g.status).toBe('ng');
     expect(g.built[0]).toEqual([':', 'boolean']);
@@ -146,9 +208,10 @@ describe('GameState: tap / backspace / reveal / finish', () => {
     expect(g.status).toBe('idle');
   });
 
-  it('backspace() is a no-op once the whole exercise is solved', () => {
+  it('backspace() is a no-op once the step\'s exercise is solved', () => {
     const g = new GameState();
-    for (const line of ex0.lines) for (const t of line.t) g.tap(t);
+    g.tap(':');
+    g.tap('string');
     expect(g.cur()).toBeUndefined();
     g.backspace();
     expect(g.built[0]).toEqual([':', 'string']);
@@ -157,25 +220,41 @@ describe('GameState: tap / backspace / reveal / finish', () => {
   it('reveal() fills the current line with the correct answer and locks it', () => {
     const g = new GameState();
     g.reveal();
-    expect(g.built[0]).toEqual(ex0.lines[0].t);
+    expect(g.built[0]).toEqual(step1Ex.lines[0].t);
     expect(g.status).toBe('ok');
     expect(g.isLocked(0)).toBe(true);
   });
 
-  it('finishing the last fillable line marks the chapter done and celebrates', () => {
+  it('finishing a non-last step\'s exercise clears cur() but does not finish the chapter', () => {
     const g = new GameState();
-    g.ci = 0;
-    for (const line of ex0.lines) for (const t of line.t) g.tap(t);
+    g.openChapter(0); // chapter 0 has 3 steps; STEP 1 is not the last
+    g.tap(':');
+    g.tap('string');
     expect(g.cur()).toBeUndefined();
-    expect(g.done[0]).toBe(true);
+    expect(g.status).toBe('ok');
+    expect(g.done.ts[0]).toBeUndefined();
+    expect(g.celebrating).toBe(false);
+  });
+
+  it('finishing the last step\'s exercise marks the chapter done and celebrates', () => {
+    const g = new GameState();
+    g.openChapter(0);
+    g.sl = 2; // chapter 0's last step (STEP 3)
+    const lastEx = DATA[0].steps[2].ex;
+    for (const line of lastEx.lines) for (const t of line.t) g.tap(t);
+    expect(g.cur()).toBeUndefined();
+    expect(g.done.ts[0]).toBe(true);
     expect(g.celebrating).toBe(true);
   });
 
-  it('does not finish early: the chapter is not done until every fillable line is solved', () => {
+  it('does not finish early: a step is not done until every one of its fillable lines is solved', () => {
     const g = new GameState();
+    g.ci = 0;
+    g.sl = 1; // STEP 2 has 2 fillable lines
     g.tap(':');
-    g.tap('string'); // only the first fillable line is solved
-    expect(g.done[0]).toBeUndefined();
+    g.tap('number'); // only the first fillable line is solved
+    expect(g.cur()).toBe(1);
+    expect(g.done.ts[0]).toBeUndefined();
     expect(g.celebrating).toBe(false);
   });
 });
@@ -187,7 +266,7 @@ describe('GameState: lineChips', () => {
     const slots = chips.filter(isKind('slot'));
     expect(slots.map((s) => s.state)).toEqual(['cur-first', 'cur-rest']);
     const code = chips.filter(isKind('code')).map((c) => c.text).join('');
-    expect(code).toBe(ex0.lines[0].pre + ex0.lines[0].post);
+    expect(code).toBe(step1Ex.lines[0].pre + step1Ex.lines[0].post);
   });
 
   it('a wrong-but-full attempt renders filled chips in the bad state', () => {
@@ -212,13 +291,14 @@ describe('GameState: lineChips', () => {
 });
 
 describe('GameState: union lines accept any member order', () => {
-  // Chapter 1 (index 1, プリミティブ型とリテラル型), line 0:
+  // Chapter 1 (index 1, プリミティブ型とリテラル型), STEP 2, line 0:
   // type Status = "idle" | "loading" | "done"; — real unions have no
   // canonical member order, so a differently-ordered-but-valid answer
   // must still be accepted.
   const statusLine = () => {
     const g = new GameState();
     g.openChapter(1);
+    g.sl = 1; // STEP 2 holds the Status union exercise
     return g;
   };
 
@@ -237,7 +317,7 @@ describe('GameState: union lines accept any member order', () => {
   });
 
   it('still requires the fixed prefix before the union (":" here) in place', () => {
-    // Chapter 4 (index 4, ユニオン型と型ガード), line 0: function show(v: string | number) {
+    // Chapter 4 (index 4, ユニオン型と型ガード), STEP 1, line 0: function show(v: string | number) {
     const g = new GameState();
     g.openChapter(4);
     for (const t of ['string', ':', '|', 'number']) g.tap(t);
@@ -258,6 +338,6 @@ describe('GameState: non-union lines still require exact order', () => {
 describe('GameState: paletteTokens', () => {
   it('dedupes answer + decoy tokens and sorts shortest/alphabetical first', () => {
     const g = new GameState();
-    expect(g.paletteTokens(ex0)).toEqual([':', '=>', 'any', 'void', 'number', 'string', 'boolean', 'string[]']);
+    expect(g.paletteTokens(ex0)).toEqual([':', 'void', 'number', 'string', 'boolean']);
   });
 });

@@ -11,14 +11,6 @@ export interface LineSpec {
   unionAt?: number;
 }
 
-export interface SlideSpec {
-  kicker: string;
-  heading: string;
-  body: string[];
-  code?: string[];
-  note: string;
-}
-
 export interface ExerciseSpec {
   file: string;
   goal: string;
@@ -28,10 +20,18 @@ export interface ExerciseSpec {
   out: string[];
 }
 
+export interface StepSpec {
+  kicker: string;
+  heading: string;
+  body: string[];
+  code?: string[];
+  note: string;
+  ex: ExerciseSpec;
+}
+
 export interface Chapter {
   num: string;
   title: string;
   sub: string;
-  slides: SlideSpec[];
-  ex: ExerciseSpec;
+  steps: StepSpec[];
 }

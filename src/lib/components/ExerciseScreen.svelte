@@ -5,6 +5,13 @@
   const ex = $derived(game.ex);
   const cur = $derived(game.cur());
   const allDone = $derived(cur === undefined);
+  const readyForNextStep = $derived(allDone && !game.isLastStep());
+
+  let body: HTMLDivElement | undefined = $state();
+  $effect(() => {
+    cur; // track: re-run whenever the current line changes
+    body?.querySelector('.current')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
 
   const beforeIdx = $derived(ex.lines.map((_, i) => i).filter((i) => cur === undefined || i < cur));
   const afterIdx = $derived(ex.lines.map((_, i) => i).filter((i) => cur !== undefined && i > cur));
@@ -40,7 +47,7 @@
     <div class="goal-text">{ex.goal}</div>
   </div>
 
-  <div class="body">
+  <div class="body" bind:this={body}>
     {#if game.variant === 'A'}
       <div class="editor">
         <div class="editor-head">
@@ -50,7 +57,7 @@
         <div class="editor-lines">
           {#each ex.lines as _, i}
             <div class="code-row" class:current={cur === i}>
-              <div class="lineno mono">{i + 1}</div>
+              <div class="lineno mono">{cur === i ? '▸' : i + 1}</div>
               <ExerciseLine chips={game.lineChips(i)} />
             </div>
           {/each}
@@ -85,6 +92,9 @@
             <div class="output-line mono">{line}</div>
           {/each}
         </div>
+        {#if readyForNextStep}
+          <button class="next-step" onclick={() => game.nextStep()}>次のステップへ</button>
+        {/if}
       </div>
     {/if}
 
@@ -253,6 +263,7 @@
   }
   .code-row.current {
     background: var(--codeRow);
+    box-shadow: inset 2px 0 0 var(--ac);
   }
   .lineno {
     width: 14px;
@@ -261,6 +272,15 @@
     font-size: 10.5px;
     color: var(--cPn);
     user-select: none;
+  }
+  .code-row.current .lineno {
+    color: var(--ac);
+    font-weight: 700;
+    animation: ttNudge 1s ease-in-out infinite;
+  }
+  @keyframes ttNudge {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(2px); }
   }
   .focus-mode {
     display: flex;
@@ -322,6 +342,19 @@
     font-size: 12px;
     line-height: 1.7;
     color: var(--okFg);
+  }
+  .next-step {
+    margin-top: 13px;
+    width: 100%;
+    min-height: 46px;
+    border-radius: 13px;
+    border: none;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--okFg);
+    background: var(--sf);
+    border: 1px solid var(--okBd);
   }
   .hint-panel {
     margin-top: 12px;

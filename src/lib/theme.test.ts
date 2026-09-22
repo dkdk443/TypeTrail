@@ -4,7 +4,7 @@ import { THEME_KEYS, THEMES, themeVarsStyle } from './theme';
 describe('THEMES', () => {
   it('THEME_KEYS matches the THEMES map exactly', () => {
     expect(THEME_KEYS).toEqual(Object.keys(THEMES));
-    expect(THEME_KEYS.length).toBe(6);
+    expect(THEME_KEYS.length).toBe(7);
   });
 
   it('every theme defines the exact same set of CSS variable keys', () => {

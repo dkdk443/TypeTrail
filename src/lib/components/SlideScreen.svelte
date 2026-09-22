@@ -3,9 +3,9 @@
   import RichText from './RichText.svelte';
   import CodeTokens from './CodeTokens.svelte';
 
-  const slides = $derived(game.ch.slides);
-  const sd = $derived(slides[game.sl] || slides[0]);
-  const lastSlide = $derived(game.sl === slides.length - 1);
+  const steps = $derived(game.ch.steps);
+  const sd = $derived(game.step);
+  const lastStep = $derived(game.isLastStep());
 </script>
 
 <div class="wrap">
@@ -16,7 +16,7 @@
       <div class="title">{game.ch.title}</div>
     </div>
     <div class="dots">
-      {#each slides as _, i}
+      {#each steps as _, i}
         <div class="dot" class:on={i === game.sl}></div>
       {/each}
     </div>
@@ -45,12 +45,7 @@
   </div>
 
   <div class="footer">
-    {#if game.sl > 0}
-      <button class="prev" onclick={() => game.prevSlide()}>‹</button>
-    {/if}
-    <button class="next" class:last={lastSlide} onclick={() => game.nextSlide()}>
-      {lastSlide ? 'つくってみる' : 'つぎへ'}
-    </button>
+    <button class="next" class:last={lastStep} onclick={() => game.toEx()}>といてみる</button>
   </div>
 </div>
 
@@ -184,15 +179,6 @@
     padding: 10px 18px 28px;
     display: flex;
     gap: 10px;
-  }
-  .prev {
-    width: 58px;
-    border-radius: 16px;
-    border: 1px solid var(--bd);
-    background: var(--card);
-    font-size: 18px;
-    cursor: pointer;
-    color: var(--fg);
   }
   .next {
     flex: 1;

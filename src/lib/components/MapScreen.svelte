@@ -1,36 +1,55 @@
 <script lang="ts">
-  import { DATA } from '../data';
-  import { game } from '../gameState.svelte';
+  import { game } from "../gameState.svelte";
+  import { TRAILS, TRAIL_KEYS } from "../trails";
 
-  const totalCh = DATA.length;
-  const doneCount = $derived(Object.keys(game.done).length);
+  const trail = $derived(TRAILS[game.trail]);
+  const totalCh = $derived(game.chapters.length);
+  const done = $derived(game.done[game.trail]);
+  const doneCount = $derived(Object.keys(done).length);
   const pct = $derived(Math.round((doneCount / totalCh) * 100));
   const barPct = $derived(Math.max(pct, 3));
 
   const chapters = $derived(
-    DATA.map((c, i) => {
-      const isDone = !!game.done[i];
-      const active = i === 0 || !!game.done[i - 1] || isDone;
-      const state = isDone ? 'クリア済み' : active ? 'はじめる' : 'この前をクリアすると開きます';
+    game.chapters.map((c, i) => {
+      const isDone = !!done[i];
+      const active = i === 0 || !!done[i - 1] || isDone;
+      const state = isDone
+        ? "クリア済み"
+        : active
+          ? "はじめる"
+          : "この前をクリアすると開きます";
       return { c, i, isDone, active, state };
-    })
+    }),
   );
 </script>
 
 <div class="wrap">
   <div class="top">
     <div class="brand">
-      <div class="badge mono">TT</div>
-      <div class="name">TypeTrail</div>
+      <div class="badge mono">{trail.badge}</div>
+      <div class="name">{trail.label}</div>
     </div>
-    <div class="streak">
-      <div class="dot"></div>
-      <div>3日れんぞく</div>
+    <div class="switcher">
+      {#each TRAIL_KEYS as key}
+        <button class:on={game.trail === key} onclick={() => game.setTrail(key)}
+          >{TRAILS[key].label}</button
+        >
+      {/each}
     </div>
   </div>
 
-  <h1>JS のつぎは、<br />型をつけにいこう</h1>
-  <p class="sub">むずかしい記法は全部パレットにあります。指でタップして、1行ずつ組み立てるだけ。</p>
+  {#if game.trail === "ts"}
+    <h1>型をつけにいこう</h1>
+    <p class="sub">
+      むずかしい記法は全部パレットにあります。指でタップして、1行ずつ組み立てるだけ。
+    </p>
+  {:else}
+    <h1>型のまえに、<br />JS を体にしみこませよう</h1>
+    <p class="sub">
+      配列メソッドや非同期処理など、TypeScript の土台になる JS
+      の書き方をおさらいします。
+    </p>
+  {/if}
 
   <div class="progress">
     <div class="bar"><div class="fill" style="width:{barPct}%"></div></div>
@@ -93,22 +112,27 @@
     font-weight: 700;
     letter-spacing: 0.04em;
   }
-  .streak {
+  .switcher {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    gap: 3px;
     border: 1px solid var(--bd);
     border-radius: 99px;
-    padding: 5px 12px;
+    padding: 3px;
     background: var(--card);
+  }
+  .switcher button {
+    border: none;
+    background: transparent;
+    border-radius: 99px;
+    padding: 6px 12px;
     font-size: 11.5px;
     font-weight: 700;
+    color: var(--mu);
+    cursor: pointer;
   }
-  .streak .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 99px;
-    background: var(--ac2);
+  .switcher button.on {
+    background: var(--ac);
+    color: var(--acFg);
   }
   h1 {
     margin: 20px 22px 0;
@@ -221,8 +245,12 @@
     letter-spacing: 0.04em;
     color: var(--mu);
   }
-  .state.active { color: var(--ac); }
-  .state.done { color: var(--ac2); }
+  .state.active {
+    color: var(--ac);
+  }
+  .state.done {
+    color: var(--ac2);
+  }
   .chev {
     font-size: 19px;
     color: var(--mu);

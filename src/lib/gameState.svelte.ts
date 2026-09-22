@@ -1,7 +1,7 @@
-import { DATA } from './data';
 import type { ExerciseSpec } from './types';
 import { tok, type TokenKind } from './highlight';
 import type { ThemeKey } from './theme';
+import { TRAILS, type TrailKey } from './trails';
 
 function permutations<T>(items: T[]): T[][] {
   if (items.length <= 1) return [items];
@@ -22,18 +22,21 @@ export type LineChip =
 
 export class GameState {
   screen = $state<Screen>('map');
+  trail = $state<TrailKey>('ts');
   ci = $state(0);
   sl = $state(0);
   variant = $state<Variant>('A');
   built = $state<string[][]>([]);
   status = $state<Status>('idle');
   hint = $state(false);
-  done = $state<Record<number, boolean>>({});
+  done = $state<Record<TrailKey, Record<number, boolean>>>({ ts: {}, js: {} });
   celebrating = $state(false);
-  theme = $state<ThemeKey>('TSブルー');
+  theme = $state<ThemeKey>(TRAILS.ts.theme);
 
-  ch = $derived(DATA[this.ci]);
-  ex = $derived(this.ch.ex);
+  chapters = $derived(TRAILS[this.trail].chapters);
+  ch = $derived(this.chapters[this.ci]);
+  step = $derived(this.ch.steps[this.sl]);
+  ex = $derived(this.step.ex);
 
   buildIdx(ex: ExerciseSpec = this.ex): number[] {
     return ex.lines.map((l, i) => (l.t.length ? i : -1)).filter((i) => i >= 0);
@@ -69,7 +72,11 @@ export class GameState {
     return this.buildIdx(ex).find((i) => !this.isLocked(i, ex));
   }
 
-  openChapter(ci: number) {
+  openChapter(ci: number, trail: TrailKey = this.trail) {
+    if (trail !== this.trail) {
+      this.trail = trail;
+      this.theme = TRAILS[trail].theme;
+    }
     this.screen = 'slide';
     this.ci = ci;
     this.sl = 0;
@@ -77,6 +84,15 @@ export class GameState {
     this.status = 'idle';
     this.hint = false;
     this.celebrating = false;
+  }
+
+  /** Switches to a trail's own map screen (its own chapters, theme, and progress). */
+  setTrail(trail: TrailKey) {
+    if (trail !== this.trail) {
+      this.trail = trail;
+      this.theme = TRAILS[trail].theme;
+    }
+    this.toMap();
   }
 
   toMap() {
@@ -91,18 +107,17 @@ export class GameState {
     this.hint = false;
   }
 
-  prevSlide() {
-    if (this.sl > 0) this.sl -= 1;
+  isLastStep(): boolean {
+    return this.sl === this.ch.steps.length - 1;
   }
 
-  nextSlide() {
-    if (this.sl === this.ch.slides.length - 1) this.toEx();
-    else this.sl += 1;
-  }
-
-  /** Advances the slide step without leaving to the exercise screen (desktop: slide + exercise are shown together). */
-  advanceSlide() {
-    if (this.sl < this.ch.slides.length - 1) this.sl += 1;
+  /** Advances from a solved step to the next step's slide (resets the per-step exercise state). */
+  nextStep() {
+    this.sl += 1;
+    this.screen = 'slide';
+    this.built = [];
+    this.status = 'idle';
+    this.hint = false;
   }
 
   setVariant(v: Variant) {
@@ -115,7 +130,8 @@ export class GameState {
 
   private finish() {
     if (this.cur() !== undefined) return;
-    this.done = { ...this.done, [this.ci]: true };
+    if (!this.isLastStep()) return; // this step is solved, but more steps remain — no celebration yet
+    this.done = { ...this.done, [this.trail]: { ...this.done[this.trail], [this.ci]: true } };
     this.celebrating = true;
   }
 
@@ -167,7 +183,7 @@ export class GameState {
 
   celebrateNext() {
     const nextCi = this.ci + 1;
-    if (nextCi >= DATA.length) this.toMap();
+    if (nextCi >= this.chapters.length) this.toMap();
     else this.openChapter(nextCi);
   }
 

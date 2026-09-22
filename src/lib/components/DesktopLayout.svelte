@@ -1,32 +1,40 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { DATA } from '../data';
   import { game } from '../gameState.svelte';
+  import { TRAILS, TRAIL_KEYS } from '../trails';
   import RichText from './RichText.svelte';
   import CodeTokens from './CodeTokens.svelte';
   import ExerciseLine from './ExerciseLine.svelte';
   import CelebrateOverlay from './CelebrateOverlay.svelte';
 
-  const doneCount = $derived(Object.keys(game.done).length);
-  const pct = $derived(Math.round((doneCount / DATA.length) * 100));
+  const trail = $derived(TRAILS[game.trail]);
+  const done = $derived(game.done[game.trail]);
+  const doneCount = $derived(Object.keys(done).length);
+  const pct = $derived(Math.round((doneCount / game.chapters.length) * 100));
   const barPct = $derived(Math.max(pct, 3));
 
   const chapters = $derived(
-    DATA.map((c, i) => {
-      const isDone = !!game.done[i];
+    game.chapters.map((c, i) => {
+      const isDone = !!done[i];
       const active = i === game.ci;
       const state = isDone ? 'クリア済み' : active ? '学習中' : '未着手';
       return { c, i, isDone, active, state };
     })
   );
 
-  const slides = $derived(game.ch.slides);
-  const sd = $derived(slides[game.sl] || slides[0]);
-  const lastSlide = $derived(game.sl === slides.length - 1);
+  const steps = $derived(game.ch.steps);
+  const sd = $derived(game.step);
 
   const ex = $derived(game.ex);
   const cur = $derived(game.cur());
+
+  let codeBody: HTMLDivElement | undefined = $state();
+  $effect(() => {
+    cur; // track: re-run whenever the current line changes
+    codeBody?.querySelector('.current')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
   const allDone = $derived(cur === undefined);
+  const readyForNextStep = $derived(allDone && !game.isLastStep());
   const palette = $derived(game.paletteTokens());
 
   const feedbackText = $derived(
@@ -58,9 +66,13 @@
 <div class="frame">
   <div class="top">
     <div class="brand">
-      <div class="badge mono">TT</div>
-      <div class="name">TypeTrail</div>
-      <div class="pill">JS → TS</div>
+      <div class="badge mono">{trail.badge}</div>
+      <div class="name">{trail.label}</div>
+    </div>
+    <div class="switcher">
+      {#each TRAIL_KEYS as key}
+        <button class:on={game.trail === key} onclick={() => game.setTrail(key)}>{TRAILS[key].label}</button>
+      {/each}
     </div>
     <div class="progress">
       <div class="progress-label">学習の進み</div>
@@ -94,7 +106,7 @@
         <div class="kicker mono">{sd.kicker}</div>
         <div class="spacer"></div>
         <div class="dots">
-          {#each slides as _, i}
+          {#each steps as _, i}
             <div class="dot" class:on={i === game.sl}></div>
           {/each}
         </div>
@@ -117,12 +129,6 @@
       </div>
       <div class="slide-grow"></div>
       <div class="slide-actions">
-        {#if game.sl > 0}
-          <button class="prev" onclick={() => game.prevSlide()}>前へ</button>
-        {/if}
-        <button class="next" disabled={lastSlide} onclick={() => game.advanceSlide()}>
-          {lastSlide ? '解説はここまで' : 'つぎの解説へ'}
-        </button>
         <div class="spacer"></div>
         <button class="hint-toggle" onclick={() => game.toggleHint()}>{game.hint ? 'ヒントを閉じる' : 'ヒント'}</button>
       </div>
@@ -146,11 +152,11 @@
         <div class="goal-text">{ex.goal}</div>
       </div>
 
-      <div class="code-body">
+      <div class="code-body" bind:this={codeBody}>
         <div class="code-lines">
           {#each ex.lines as _, i}
             <div class="code-row" class:current={cur === i}>
-              <div class="lineno mono">{i + 1}</div>
+              <div class="lineno mono">{cur === i ? '▸' : i + 1}</div>
               <ExerciseLine chips={game.lineChips(i)} />
             </div>
           {/each}
@@ -163,6 +169,9 @@
                 <div class="output-line mono">{line}</div>
               {/each}
             </div>
+            {#if readyForNextStep}
+              <button class="next-step" onclick={() => game.nextStep()}>次のステップへ</button>
+            {/if}
           </div>
         {/if}
       </div>
@@ -238,13 +247,27 @@
     font-weight: 900;
     letter-spacing: 0.03em;
   }
-  .pill {
+  .switcher {
+    display: flex;
+    gap: 3px;
+    border: 1px solid var(--bd);
+    border-radius: 99px;
+    padding: 3px;
+    background: var(--card2);
+  }
+  .switcher button {
+    border: none;
+    background: transparent;
+    border-radius: 99px;
+    padding: 6px 12px;
     font-size: 11px;
     font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 99px;
-    background: var(--card2);
     color: var(--mu);
+    cursor: pointer;
+  }
+  .switcher button.on {
+    background: var(--ac);
+    color: var(--acFg);
   }
   .progress {
     flex: 1;
@@ -467,28 +490,6 @@
     gap: 10px;
     margin-top: 24px;
   }
-  .prev,
-  .next {
-    min-height: 44px;
-    padding: 0 18px;
-    border-radius: 12px;
-    border: 1px solid var(--bd);
-    background: var(--card);
-    color: var(--fg);
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .next {
-    border: none;
-    background: var(--ac);
-    color: var(--acFg);
-    padding: 0 22px;
-  }
-  .next:disabled {
-    cursor: default;
-    opacity: 0.45;
-  }
   .hint-toggle {
     min-height: 44px;
     padding: 0 16px;
@@ -595,6 +596,7 @@
   }
   .code-row.current {
     background: var(--codeRow);
+    box-shadow: inset 2px 0 0 var(--ac);
   }
   .lineno {
     width: 16px;
@@ -603,6 +605,15 @@
     font-size: 11px;
     color: var(--cPn);
     user-select: none;
+  }
+  .code-row.current .lineno {
+    color: var(--ac);
+    font-weight: 700;
+    animation: ttNudge 1s ease-in-out infinite;
+  }
+  @keyframes ttNudge {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(2px); }
   }
   .output {
     margin-top: 18px;
@@ -628,6 +639,18 @@
     font-size: 12px;
     line-height: 1.7;
     color: var(--okFg);
+  }
+  .next-step {
+    margin-top: 13px;
+    width: 100%;
+    min-height: 42px;
+    border-radius: 12px;
+    border: 1px solid var(--okBd);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--okFg);
+    background: var(--sf);
   }
 
   .palette-panel {

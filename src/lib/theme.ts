@@ -4,7 +4,8 @@ export type ThemeKey =
   | 'ネオン'
   | 'サンライズ'
   | 'ターミナル'
-  | 'ペーパー';
+  | 'ペーパー'
+  | 'JSイエロー';
 
 export interface ThemeVars {
   bg: string; sf: string; card: string; card2: string;
@@ -82,7 +83,17 @@ export const THEMES: Record<ThemeKey, ThemeDef> = {
     cFg: 'oklch(0.89 0.008 260)', cKw: 'oklch(0.76 0.13 272)', cStr: 'oklch(0.83 0.12 162)', cNum: 'oklch(0.81 0.1 320)', cPn: 'oklch(0.62 0.02 262)',
     chipBg: 'oklch(0.4 0.11 270)', chipFg: 'oklch(0.98 0.01 265)', slot: 'oklch(0.28 0.02 266)', slotBd: 'oklch(0.42 0.03 266)',
     okBg: 'oklch(0.95 0.04 172)', okBd: 'oklch(0.8 0.08 172)', okFg: 'oklch(0.42 0.1 174)',
-    badBg: 'oklch(0.5 0.16 25)', badFg: 'oklch(0.98 0.03 30)', bad: 'oklch(0.52 0.18 27)' } }
+    badBg: 'oklch(0.5 0.16 25)', badFg: 'oklch(0.98 0.03 30)', bad: 'oklch(0.52 0.18 27)' } },
+
+  'JSイエロー': { swatch: 'oklch(0.85 0.17 97)', overlay: 'oklch(0.97 0.03 95 / 0.95)', v: {
+    bg: 'oklch(0.93 0.03 90)', sf: 'oklch(0.995 0.012 95)', card: 'oklch(0.975 0.022 92)', card2: 'oklch(0.945 0.035 90)',
+    bd: 'oklch(0.88 0.035 88)', fg: 'oklch(0.24 0.02 80)', mu: 'oklch(0.5 0.028 85)',
+    ac: 'oklch(0.85 0.17 97)', acFg: 'oklch(0.2 0.03 90)', ac2: 'oklch(0.62 0.15 55)', ac2Fg: 'oklch(0.99 0.01 60)',
+    code: 'oklch(0.22 0.02 85)', codeBd: 'oklch(0.32 0.03 85)', codeRow: 'oklch(0.28 0.035 83)',
+    cFg: 'oklch(0.9 0.015 85)', cKw: 'oklch(0.85 0.15 97)', cStr: 'oklch(0.84 0.11 158)', cNum: 'oklch(0.83 0.1 60)', cPn: 'oklch(0.65 0.02 85)',
+    chipBg: 'oklch(0.55 0.13 90)', chipFg: 'oklch(0.15 0.03 90)', slot: 'oklch(0.3 0.03 85)', slotBd: 'oklch(0.45 0.04 85)',
+    okBg: 'oklch(0.38 0.1 150)', okBd: 'oklch(0.55 0.12 150)', okFg: 'oklch(0.9 0.1 150)',
+    badBg: 'oklch(0.48 0.15 25)', badFg: 'oklch(0.98 0.03 30)', bad: 'oklch(0.55 0.18 27)' } }
 };
 
 export const THEME_KEYS = Object.keys(THEMES) as ThemeKey[];

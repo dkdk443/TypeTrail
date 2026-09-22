@@ -1,15 +1,14 @@
 <script lang="ts">
-  import { DATA } from '../data';
   import { game } from '../gameState.svelte';
   import { THEMES } from '../theme';
 
   const overlayBg = $derived(THEMES[game.theme].overlay);
   const nextCi = $derived(game.ci + 1);
-  const isCourseDone = $derived(nextCi >= DATA.length);
+  const isCourseDone = $derived(nextCi >= game.chapters.length);
   const title = $derived(isCourseDone ? 'コース修了！' : 'クリア！');
   const body = $derived(
     isCourseDone
-      ? '5つのレッスンを全部やりきりました。次は自分のコードに型をつけにいきましょう。'
+      ? `${game.chapters.length}つのレッスンを全部やりきりました。次は自分のコードに型をつけにいきましょう。`
       : `${game.ch.title} をクリアしました。この調子でつぎへ。`
   );
   const btnLabel = $derived(isCourseDone ? '学習マップへ' : 'つぎのレッスンへ');
