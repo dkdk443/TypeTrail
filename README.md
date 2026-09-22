@@ -5,8 +5,10 @@
 🔗 **Demo**: https://type-trail-chi.vercel.app/
 🔗 **Repo**: https://github.com/dkdk443/TypeTrail
 
-<!-- ここにスクリーンショットを貼る予定 -->
-<!-- ![screenshot](./docs/screenshot.png) -->
+
+<img width="1440" height="811" alt="スクリーンショット 2026-09-22 17 28 47" src="https://github.com/user-attachments/assets/09db5a0e-0c03-4b06-b2f9-9e4ca8b68075" />
+
+<img width="1440" height="811" alt="スクリーンショット 2026-09-22 17 29 11" src="https://github.com/user-attachments/assets/e0360c9e-6098-4a5c-a082-d1319fd08b6b" />
 
 ## なぜ作ったのか
 
