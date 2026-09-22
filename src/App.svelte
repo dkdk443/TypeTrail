@@ -3,6 +3,7 @@
   import { game } from './lib/gameState.svelte';
   import { themeVarsStyle } from './lib/theme';
   import { isUnlocked, parseUrl, urlFor } from './lib/router';
+  import { loadDone, saveDone } from './lib/persistence';
   import MapScreen from './lib/components/MapScreen.svelte';
   import SlideScreen from './lib/components/SlideScreen.svelte';
   import ExerciseScreen from './lib/components/ExerciseScreen.svelte';
@@ -21,6 +22,11 @@
       game.setTrail(route.trail);
     }
   }
+
+  // Restore saved progress before resolving the URL below, so a reload's lock
+  // check (isUnlocked) sees the same `done` state the user actually earned.
+  const savedDone = loadDone();
+  if (savedDone) game.done = savedDone;
 
   // Resolve the URL the app was loaded with before the first render, so a
   // deep link (or a reload) lands on the right trail/chapter instead of the map.
@@ -50,6 +56,11 @@
   $effect(() => {
     const url = urlFor(game.trail, game.screen, game.ci);
     if (location.pathname !== url) history.pushState(null, '', url);
+  });
+
+  // Persist completed chapters (per trail) so a reload doesn't lose progress.
+  $effect(() => {
+    saveDone(game.done);
   });
 
   const themeStyle = $derived(themeVarsStyle(game.theme));
