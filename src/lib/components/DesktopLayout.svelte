@@ -151,17 +151,6 @@
       <div class="note">
         <div class="note-text"><RichText text={sd.note} /></div>
       </div>
-      <div class="slide-grow"></div>
-      <div class="slide-actions">
-        <div class="spacer"></div>
-        <button class="hint-toggle" onclick={() => game.toggleHint()}>{game.hint ? 'ヒントを閉じる' : 'ヒント'}</button>
-      </div>
-      {#if game.hint}
-        <div class="hint-panel">
-          <div class="hint-label">ヒント</div>
-          <div class="hint-text">{ex.hint}</div>
-        </div>
-      {/if}
     </div>
 
     <div class="code-pane">
@@ -245,6 +234,12 @@
         </div>
       {:else}
         <div class="palette-panel">
+          {#if game.hint}
+            <div class="hint-panel">
+              <div class="hint-label">ヒント</div>
+              <div class="hint-text">{ex.hint}</div>
+            </div>
+          {/if}
           <div class="palette-top">
             <div class="palette-label">パレット</div>
             <div class="palette-hint">クリック または 数字キー</div>
@@ -259,6 +254,9 @@
           </div>
           <div class="actions">
             <button class="ghost" onclick={() => game.backspace()}>⌫ もどす</button>
+            <button class="ghost" class:on={game.hint} onclick={() => game.toggleHint()}>
+              {game.hint ? 'ヒントを閉じる' : 'ヒント'}
+            </button>
             <div class="spacer"></div>
             <button class="reveal" onclick={() => game.reveal()}>答えを見る</button>
           </div>
@@ -588,48 +586,6 @@
     line-height: 1.95;
     color: var(--fg);
   }
-  .slide-grow {
-    flex: 1;
-    min-height: 24px;
-  }
-  .slide-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-top: 24px;
-  }
-  .hint-toggle {
-    min-height: 44px;
-    padding: 0 16px;
-    border-radius: 12px;
-    border: 1px solid var(--bd);
-    background: transparent;
-    color: var(--mu);
-    font-size: 12.5px;
-    font-weight: 700;
-    cursor: pointer;
-  }
-  .hint-panel {
-    margin-top: 14px;
-    border-radius: 14px;
-    background: var(--card2);
-    border-left: 3px solid var(--ac);
-    padding: 14px 16px;
-    animation: ttRise 0.25s ease both;
-  }
-  .hint-label {
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--ac);
-  }
-  .hint-text {
-    margin-top: 7px;
-    font-size: 12.5px;
-    line-height: 1.9;
-    color: var(--fg);
-  }
-
   .code-pane {
     display: flex;
     flex-direction: column;
@@ -906,6 +862,26 @@
     background: color-mix(in oklch, var(--ac2Fg) 15%, transparent);
   }
 
+  .hint-panel {
+    margin-bottom: 14px;
+    border-radius: 10px;
+    background: var(--code);
+    border-left: 3px solid var(--ac2);
+    padding: 12px 14px;
+    animation: ttRise 0.25s ease both;
+  }
+  .hint-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--ac2);
+  }
+  .hint-text {
+    margin-top: 6px;
+    font-size: 13px;
+    line-height: 1.8;
+    color: var(--cFg);
+  }
   .palette-panel {
     flex: 0 0 auto;
     border-top: 1px solid var(--codeBd);
@@ -981,6 +957,10 @@
     font-size: 12.5px;
     font-weight: 700;
     cursor: pointer;
+  }
+  .ghost.on {
+    border-color: var(--ac2);
+    color: var(--ac2);
   }
   .reveal {
     min-height: 40px;
