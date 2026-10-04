@@ -89,10 +89,10 @@ export const DATA: Chapter[] = [
           lines: [L('type Status = ', ['"idle"', '|', '"loading"', '|', '"done"'], ';', 0),
           L('let current', [':', 'Status'], ' = "idle";'),
           L('function next(s: Status)', [':', 'Status'], ' {'),
-          L('  return s ', ['===', '"idle"'], ' ? "loading" : "done";'),
+          L('  return s ', ['==='], ' "idle" ? "loading" : "done";'),
           L('}')],
           pool: ['string', 'enum', '==', 'number', '"paused"'],
-          hint: '候補は | でつなぎます。比較は厳密等価（イコール3つ）で。',
+          hint: '候補は | でつなぎます。4行目で返している値も Status に含まれている必要があります。比較は厳密等価（イコール3つ）で。',
           out: ['✓ 型チェックを通過しました', 'next("idle") → "loading"']
         }
       }
