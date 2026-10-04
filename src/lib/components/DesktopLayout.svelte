@@ -37,17 +37,25 @@
   const readyForNextStep = $derived(allDone && !game.isLastStep());
   const palette = $derived(game.paletteTokens());
 
-  const feedbackText = $derived(
-    game.status === 'ng'
-      ? 'おしい！ ⌫ で消してやり直そう'
-      : allDone
-        ? 'ぜんぶ揃いました'
-        : game.status === 'ok'
-          ? 'いいね、その調子'
-          : ''
+  const fillIdx = $derived(game.buildIdx());
+  const slotTotal = $derived(fillIdx.reduce((n, i) => n + ex.lines[i].t.length, 0));
+  const slotFilled = $derived(
+    fillIdx.reduce((n, i) => n + Math.min((game.built[i] || []).length, ex.lines[i].t.length), 0)
   );
+  const fillPct = $derived(slotTotal ? (slotFilled / slotTotal) * 100 : 0);
+
+  // ex.out[0] is always the "✓ ..." verdict line; the rest are result lines.
+  const passTitle = $derived(ex.out[0]?.replace(/^✓\s*/, '') ?? '');
+  const passLines = $derived(ex.out.slice(1));
 
   function onKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter') {
+      if (readyForNextStep) {
+        e.preventDefault();
+        game.nextStep();
+      }
+      return;
+    }
     if (e.key === 'Backspace') {
       e.preventDefault();
       game.backspace();
@@ -142,14 +150,12 @@
 
     <div class="code-pane">
       <div class="code-top">
-        <div class="file mono">{ex.file}</div>
-        <div class="spacer"></div>
-        <div class="feedback" class:bad={game.status === 'ng'}>{feedbackText}</div>
-      </div>
-
-      <div class="goal">
-        <div class="goal-dot"></div>
+        <div class="code-meta">
+          <div class="file mono">{ex.file}</div>
+          <div class="fill-count mono">{slotFilled} / {slotTotal} 埋めた</div>
+        </div>
         <div class="goal-text">{ex.goal}</div>
+        <div class="fill-bar"><div class="fill-bar-in" style="width:{fillPct}%"></div></div>
       </div>
 
       <div class="code-body" bind:this={codeBody}>
@@ -161,40 +167,50 @@
             </div>
           {/each}
         </div>
-        {#if allDone}
-          <div class="output">
-            <div class="output-label">じっこうけっか</div>
-            <div class="output-lines">
-              {#each ex.out as line}
-                <div class="output-line mono">{line}</div>
-              {/each}
-            </div>
-            {#if readyForNextStep}
-              <button class="next-step" onclick={() => game.nextStep()}>次のステップへ</button>
-            {/if}
-          </div>
-        {/if}
       </div>
 
-      <div class="palette-panel">
-        <div class="palette-top">
-          <div class="palette-label">パレット</div>
-          <div class="palette-hint">クリック、または数字キーで選択</div>
-        </div>
-        <div class="palette">
-          {#each palette as t, i}
-            <button onclick={() => game.tap(t)}>
-              {#if i < 9}<span class="key">{i + 1}</span>{/if}
-              <span class="mono">{t}</span>
+      {#if game.status === 'ng'}
+        <div class="wrong">型がちがうようです。「もどす」で直してみよう。</div>
+      {/if}
+
+      {#if allDone}
+        <div class="pass">
+          <div class="pass-head">
+            <div class="pass-mark">✓</div>
+            <div class="pass-body">
+              <div class="pass-title">{passTitle}</div>
+              {#each passLines as line}
+                <div class="pass-out mono">{line}</div>
+              {/each}
+            </div>
+          </div>
+          {#if readyForNextStep}
+            <button class="next-step" onclick={() => game.nextStep()}>
+              次のステップへ <span class="enter mono">Enter</span>
             </button>
-          {/each}
+          {/if}
         </div>
-        <div class="actions">
-          <button class="ghost" onclick={() => game.backspace()}>⌫ もどす</button>
-          <div class="spacer"></div>
-          <button class="reveal" onclick={() => game.reveal()}>答えを見る</button>
+      {:else}
+        <div class="palette-panel">
+          <div class="palette-top">
+            <div class="palette-label">パレット</div>
+            <div class="palette-hint">クリック または 数字キー</div>
+          </div>
+          <div class="palette">
+            {#each palette as t, i}
+              <button onclick={() => game.tap(t)}>
+                {#if i < 9}<span class="key mono">{i + 1}</span>{/if}
+                <span class="mono">{t}</span>
+              </button>
+            {/each}
+          </div>
+          <div class="actions">
+            <button class="ghost" onclick={() => game.backspace()}>⌫ もどす</button>
+            <div class="spacer"></div>
+            <button class="reveal" onclick={() => game.reveal()}>答えを見る</button>
+          </div>
         </div>
-      </div>
+      {/if}
     </div>
   </div>
 
@@ -531,54 +547,49 @@
   .code-top {
     flex: 0 0 auto;
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: 10px;
-    padding: 0 18px;
-    height: 44px;
+    padding: 18px 24px;
     border-bottom: 1px solid var(--codeBd);
   }
-  .file {
-    font-size: 11.5px;
-    color: var(--cFg);
-    background: var(--codeRow);
-    padding: 7px 14px;
-    border-radius: 8px;
-  }
-  .feedback {
-    font-size: 11.5px;
-    font-weight: 700;
-    color: var(--ac2);
-  }
-  .feedback.bad {
-    color: var(--bad);
-  }
-  .goal {
-    flex: 0 0 auto;
-    margin: 14px 18px 0;
+  .code-meta {
     display: flex;
     align-items: center;
-    gap: 10px;
-    background: var(--codeRow);
-    border-radius: 12px;
-    padding: 11px 14px;
+    justify-content: space-between;
   }
-  .goal-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 99px;
-    background: var(--ac);
-    flex: 0 0 auto;
+  .file {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--cPn);
+  }
+  .fill-count {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--cPn);
   }
   .goal-text {
-    font-size: 12.5px;
+    font-size: 18px;
     font-weight: 700;
+    line-height: 1.5;
     color: var(--cFg);
+    text-wrap: pretty;
+  }
+  .fill-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--codeBd);
+    overflow: hidden;
+  }
+  .fill-bar-in {
+    height: 100%;
+    background: var(--ac2);
+    transition: width 0.3s ease;
   }
   .code-body {
     flex: 1;
     min-height: 0;
     overflow: auto;
-    padding: 18px 14px 20px;
+    padding: 24px 18px;
   }
   .code-lines {
     display: flex;
@@ -589,20 +600,20 @@
     display: flex;
     align-items: center;
     gap: 11px;
-    min-height: 27px;
-    padding: 1px 5px;
+    min-height: 34px;
+    padding: 2px 6px;
     border-radius: 8px;
-    font-size: 12.5px;
+    font-size: 15px;
   }
   .code-row.current {
     background: var(--codeRow);
     box-shadow: inset 2px 0 0 var(--ac);
   }
   .lineno {
-    width: 16px;
+    width: 18px;
     flex: 0 0 auto;
     text-align: right;
-    font-size: 11px;
+    font-size: 13px;
     color: var(--cPn);
     user-select: none;
   }
@@ -615,49 +626,92 @@
     0%, 100% { transform: translateX(0); }
     50% { transform: translateX(2px); }
   }
-  .output {
-    margin-top: 18px;
-    border-radius: 14px;
-    background: var(--okBg);
-    border: 1px solid var(--okBd);
-    padding: 15px 16px;
-    animation: ttRise 0.3s ease both;
+  .wrong {
+    flex: 0 0 auto;
+    margin: 0 24px 16px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--badBg);
+    color: var(--badFg);
+    font-size: 14px;
+    animation: ttRise 0.2s ease both;
   }
-  .output-label {
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--okFg);
-  }
-  .output-lines {
-    margin-top: 9px;
+  .pass {
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 14px;
+    padding: 20px 24px 22px;
+    background: var(--okBg);
+    border-top: 2px solid var(--okBd);
+    animation: ttRise 0.3s ease both;
   }
-  .output-line {
-    font-size: 12px;
-    line-height: 1.7;
-    color: var(--okFg);
+  .pass-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
-  .next-step {
-    margin-top: 13px;
-    width: 100%;
-    min-height: 42px;
-    border-radius: 12px;
-    border: 1px solid var(--okBd);
-    cursor: pointer;
-    font-size: 13px;
+  .pass-mark {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--ac2);
+    color: var(--ac2Fg);
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pass-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .pass-title {
+    font-size: 16px;
     font-weight: 700;
     color: var(--okFg);
-    background: var(--sf);
+  }
+  .pass-out {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.6;
+    color: var(--okFg);
+    opacity: 0.85;
+  }
+  .next-step {
+    min-height: 52px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--ac2Fg);
+    background: var(--ac2);
+    transition: filter 0.15s ease;
+  }
+  .next-step:hover {
+    filter: brightness(1.12);
+  }
+  .enter {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: color-mix(in oklch, var(--ac2Fg) 15%, transparent);
   }
 
   .palette-panel {
     flex: 0 0 auto;
     border-top: 1px solid var(--codeBd);
     background: var(--codeRow);
-    padding: 14px 18px 18px;
+    padding: 16px 24px 20px;
   }
   .palette-top {
     display: flex;
@@ -666,13 +720,12 @@
     margin-bottom: 10px;
   }
   .palette-label {
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--cPn);
+    color: var(--cFg);
   }
   .palette-hint {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--cPn);
   }
   .palette {
@@ -683,12 +736,12 @@
   .palette button {
     display: flex;
     align-items: center;
-    gap: 7px;
-    font-size: 13px;
+    gap: 8px;
+    font-size: 15px;
     font-weight: 500;
-    min-height: 38px;
-    padding: 0 12px;
-    border-radius: 10px;
+    min-height: 44px;
+    padding: 0 14px 0 8px;
+    border-radius: 8px;
     cursor: pointer;
     color: var(--cFg);
     background: var(--code);
@@ -702,9 +755,16 @@
     transform: translateY(1px);
   }
   .palette .key {
-    font-size: 9.5px;
+    min-width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
     font-weight: 700;
     color: var(--cPn);
+    background: var(--codeRow);
   }
   .actions {
     display: flex;
@@ -725,14 +785,18 @@
   }
   .reveal {
     min-height: 40px;
-    padding: 0 14px;
-    border-radius: 10px;
+    padding: 0 4px;
     border: none;
     background: transparent;
     color: var(--cPn);
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 4px;
     cursor: pointer;
+  }
+  .reveal:hover {
+    color: var(--cFg);
   }
   .spacer {
     flex: 1;
