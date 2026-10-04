@@ -141,6 +141,32 @@ describe('GameState: navigation', () => {
     expect(g.celebrating).toBe(false);
   });
 
+  it('prevStep goes back one step\'s slide with a fresh exercise, and is a no-op on the first step', () => {
+    const g = new GameState();
+    g.openChapter(0);
+    g.prevStep();
+    expect(g.sl).toBe(0);
+    g.nextStep();
+    g.tap(':');
+    g.hint = true;
+    g.prevStep();
+    expect(g.sl).toBe(0);
+    expect(g.screen).toBe('slide');
+    expect(g.built).toEqual([]);
+    expect(g.status).toBe('idle');
+    expect(g.hint).toBe(false);
+  });
+
+  it('replayCelebration re-opens the overlay only for a cleared chapter', () => {
+    const g = new GameState();
+    g.openChapter(0);
+    g.replayCelebration();
+    expect(g.celebrating).toBe(false);
+    g.done = { ...g.done, ts: { 0: true } };
+    g.replayCelebration();
+    expect(g.celebrating).toBe(true);
+  });
+
   it('toTop shows the top page and snaps back to the TypeTrail trail/theme', () => {
     const g = new GameState();
     g.setTrail('js');

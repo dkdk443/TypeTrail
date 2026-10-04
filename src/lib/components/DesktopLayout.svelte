@@ -13,12 +13,17 @@
   const pct = $derived(Math.round((doneCount / game.chapters.length) * 100));
   const barPct = $derived(Math.max(pct, 3));
 
+  // Once the open chapter is cleared, the one after it is flagged as "つぎ →".
+  const upNextCi = $derived(done[game.ci] ? game.ci + 1 : -1);
   const chapters = $derived(
     game.chapters.map((c, i) => {
       const isDone = !!done[i];
       const active = i === game.ci;
-      const state = isDone ? 'クリア済み' : active ? '学習中' : '未着手';
-      return { c, i, isDone, active, state };
+      const upNext = i === upNextCi;
+      const state = isDone
+        ? active ? 'クリア済み・見なおし中' : 'クリア済み'
+        : active ? '学習中' : upNext ? 'つぎ →' : '未着手';
+      return { c, i, isDone, active, upNext, state };
     })
   );
 
@@ -35,6 +40,9 @@
   });
   const allDone = $derived(cur === undefined);
   const readyForNextStep = $derived(allDone && !game.isLastStep());
+  // The chapter's last step is solved and the clear overlay has been dismissed ("コードを見なおす").
+  const reviewing = $derived(allDone && game.isLastStep() && !!done[game.ci] && !game.celebrating);
+  const nextChapter = $derived(game.chapters[game.ci + 1]);
   const palette = $derived(game.paletteTokens());
 
   const fillIdx = $derived(game.buildIdx());
@@ -53,6 +61,9 @@
       if (readyForNextStep) {
         e.preventDefault();
         game.nextStep();
+      } else if (reviewing) {
+        e.preventDefault();
+        game.celebrateNext();
       }
       return;
     }
@@ -97,12 +108,17 @@
     <div class="sidebar">
       <div class="sidebar-label">コース内容</div>
       <div class="rail">
-        {#each chapters as { c, i, isDone, active, state }}
-          <button class="rail-item" class:active onclick={() => game.openChapter(i)}>
-            <div class="rail-badge" class:done={isDone}>{c.num}</div>
+        {#each chapters as { c, i, isDone, active, upNext, state }}
+          <button
+            class="rail-item"
+            class:active
+            class:up-next={upNext}
+            class:pulse={upNext && reviewing}
+            onclick={() => game.openChapter(i)}>
+            <div class="rail-badge mono" class:done={isDone} class:lit={active || upNext}>{isDone ? '✓' : c.num}</div>
             <div class="rail-body">
               <div class="rail-title">{c.title}</div>
-              <div class="rail-state" class:done={isDone} class:active>{state}</div>
+              <div class="rail-state" class:done={isDone} class:active class:up-next={upNext}>{state}</div>
             </div>
           </button>
         {/each}
@@ -111,7 +127,7 @@
 
     <div class="slide-pane">
       <div class="slide-top">
-        <div class="kicker mono">{sd.kicker}</div>
+        <div class="kicker mono">CHAPTER {game.ch.num} · {sd.kicker}</div>
         <div class="spacer"></div>
         <div class="dots">
           {#each steps as _, i}
@@ -152,7 +168,9 @@
       <div class="code-top">
         <div class="code-meta">
           <div class="file mono">{ex.file}</div>
-          <div class="fill-count mono">{slotFilled} / {slotTotal} 埋めた</div>
+          <div class="fill-count mono" class:complete={allDone}>
+            {allDone ? '✓ ' : ''}{slotFilled} / {slotTotal} 埋めた
+          </div>
         </div>
         <div class="goal-text">{ex.goal}</div>
         <div class="fill-bar"><div class="fill-bar-in" style="width:{fillPct}%"></div></div>
@@ -173,7 +191,34 @@
         <div class="wrong">型がちがうようです。「もどす」で直してみよう。</div>
       {/if}
 
-      {#if allDone}
+      {#if reviewing}
+        <div class="review">
+          <div class="pass-head">
+            <div class="review-mark">✓</div>
+            <div class="pass-body">
+              <div class="review-title">この章はクリア済み</div>
+              <div class="review-next">
+                {nextChapter ? `つぎ：${nextChapter.num} ${nextChapter.title}` : 'すべてのチャプターをクリアしました'}
+              </div>
+            </div>
+          </div>
+          {#if nextChapter}
+            <button class="review-go" onclick={() => game.celebrateNext()}>
+              つぎのレッスンへ → <span class="enter mono">Enter</span>
+            </button>
+          {:else}
+            <button class="review-go" onclick={() => game.toTop()}>トップページへ</button>
+          {/if}
+          <div class="review-links">
+            {#if game.sl > 0}
+              <button onclick={() => game.prevStep()}>‹ 前のステップ</button>
+            {:else}
+              <span></span>
+            {/if}
+            <button class="replay" onclick={() => game.replayCelebration()}>結果をもう一度</button>
+          </div>
+        </div>
+      {:else if allDone}
         <div class="pass">
           <div class="pass-head">
             <div class="pass-mark">✓</div>
@@ -369,55 +414,89 @@
   .rail-item {
     display: flex;
     align-items: center;
-    gap: 11px;
+    gap: 12px;
     width: 100%;
     text-align: left;
-    padding: 11px;
-    border-radius: 12px;
+    padding: 12px;
+    border-radius: 10px;
     cursor: pointer;
     color: inherit;
     background: transparent;
     border: 1px solid transparent;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  .rail-item:hover {
+    background: var(--card2);
   }
   .rail-item.active {
-    background: var(--card2);
+    background: var(--sf);
     border-color: var(--bd);
   }
+  .rail-item.up-next {
+    background: color-mix(in oklch, var(--ac) 8%, var(--sf));
+    border: 1.5px solid var(--ac);
+  }
+  .rail-item.pulse {
+    animation: railPulse 1.6s ease 2;
+  }
+  @keyframes railPulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklch, var(--ac) 45%, transparent); }
+    50% { box-shadow: 0 0 0 8px color-mix(in oklch, var(--ac) 0%, transparent); }
+  }
   .rail-badge {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     flex: 0 0 auto;
-    border-radius: 10px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'JetBrains Mono', monospace;
     font-size: 12px;
     font-weight: 700;
     background: var(--card2);
+    color: var(--mu);
+  }
+  .rail-badge.lit {
+    background: color-mix(in oklch, var(--ac) 14%, var(--sf));
     color: var(--ac);
   }
   .rail-badge.done {
-    background: var(--ac2);
-    color: var(--ac2Fg);
+    background: var(--ac);
+    color: var(--acFg);
   }
   .rail-body {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
   }
   .rail-title {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
-    line-height: 1.45;
+    line-height: 1.4;
   }
   .rail-state {
-    margin-top: 3px;
-    font-size: 10.5px;
+    align-self: flex-start;
+    font-size: 11px;
     font-weight: 700;
     color: var(--mu);
   }
-  .rail-state.active { color: var(--ac); }
-  .rail-state.done { color: var(--ac2); }
+  .rail-state.active,
+  .rail-state.done {
+    color: var(--ac);
+  }
+  .rail-state.up-next {
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--ac);
+    color: var(--acFg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rail-item.pulse {
+      animation: none;
+    }
+  }
 
   .slide-pane {
     border-right: 1px solid var(--bd);
@@ -567,6 +646,9 @@
     font-weight: 500;
     color: var(--cPn);
   }
+  .fill-count.complete {
+    color: var(--cKw);
+  }
   .fill-count {
     font-size: 12px;
     font-weight: 500;
@@ -625,11 +707,6 @@
   .code-row.current .lineno {
     color: var(--ac);
     font-weight: 700;
-    animation: ttNudge 1s ease-in-out infinite;
-  }
-  @keyframes ttNudge {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(2px); }
   }
   .wrong {
     flex: 0 0 auto;
@@ -640,6 +717,79 @@
     color: var(--badFg);
     font-size: 14px;
     animation: ttRise 0.2s ease both;
+  }
+  .review {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 24px;
+    background: color-mix(in oklch, var(--ac) 22%, var(--code));
+    border-top: 2px solid var(--ac);
+    animation: ttRise 0.35s ease both;
+  }
+  .review-mark {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--ac);
+    color: var(--acFg);
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .review-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--cFg);
+  }
+  .review-next {
+    font-size: 13px;
+    color: var(--cKw);
+  }
+  .review-go {
+    min-height: 52px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--acFg);
+    background: var(--ac);
+    transition: filter 0.15s ease;
+  }
+  .review-go:hover {
+    filter: brightness(1.12);
+  }
+  .review-go .enter {
+    background: color-mix(in oklch, var(--acFg) 15%, transparent);
+  }
+  .review-links {
+    display: flex;
+    justify-content: space-between;
+  }
+  .review-links button {
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cFg);
+    opacity: 0.8;
+  }
+  .review-links button:hover {
+    opacity: 1;
+  }
+  .review-links .replay {
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
   .pass {
     flex: 0 0 auto;

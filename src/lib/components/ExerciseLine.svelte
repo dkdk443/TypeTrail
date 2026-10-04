@@ -49,8 +49,29 @@
   .slot.idle {
     background: var(--slot);
   }
+  /* The slot the next tap fills shows a hard-blinking text caret. */
   .slot.cur-first {
+    position: relative;
     border: 1px dashed var(--ac);
+  }
+  .slot.cur-first::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 3px;
+    bottom: 3px;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--ac);
+    animation: caretBlink 1s step-end infinite;
+  }
+  @keyframes caretBlink {
+    50% { opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slot.cur-first::after {
+      animation: none;
+    }
   }
   .slot.cur-rest {
     border: 1px dashed var(--slotBd);

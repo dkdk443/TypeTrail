@@ -276,11 +276,6 @@
   .code-row.current .lineno {
     color: var(--ac);
     font-weight: 700;
-    animation: ttNudge 1s ease-in-out infinite;
-  }
-  @keyframes ttNudge {
-    0%, 100% { transform: translateX(0); }
-    50% { transform: translateX(2px); }
   }
   .focus-mode {
     display: flex;

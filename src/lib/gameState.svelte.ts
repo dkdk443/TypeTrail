@@ -128,6 +128,16 @@ export class GameState {
     this.hint = false;
   }
 
+  /** Steps back to the previous step's slide (from the post-clear review), resetting the exercise state. */
+  prevStep() {
+    if (this.sl === 0) return;
+    this.sl -= 1;
+    this.screen = 'slide';
+    this.built = [];
+    this.status = 'idle';
+    this.hint = false;
+  }
+
   setVariant(v: Variant) {
     this.variant = v;
   }
@@ -187,6 +197,11 @@ export class GameState {
 
   stayCelebrating() {
     this.celebrating = false;
+  }
+
+  /** Re-shows the clear overlay for an already-cleared chapter ("結果をもう一度"). */
+  replayCelebration() {
+    if (this.done[this.trail][this.ci]) this.celebrating = true;
   }
 
   celebrateNext() {
