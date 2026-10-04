@@ -11,7 +11,7 @@ function permutations<T>(items: T[]): T[][] {
   });
 }
 
-export type Screen = 'map' | 'slide' | 'ex';
+export type Screen = 'top' | 'map' | 'slide' | 'ex';
 export type Status = 'idle' | 'ok' | 'ng';
 export type Variant = 'A' | 'B';
 
@@ -93,6 +93,14 @@ export class GameState {
       this.theme = TRAILS[trail].theme;
     }
     this.toMap();
+  }
+
+  /** The landing page. It's TypeTrail-branded, so it always snaps back to the TS trail/theme. */
+  toTop() {
+    this.trail = 'ts';
+    this.theme = TRAILS.ts.theme;
+    this.screen = 'top';
+    this.celebrating = false;
   }
 
   toMap() {

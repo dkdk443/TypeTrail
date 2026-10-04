@@ -9,13 +9,16 @@
   import ExerciseScreen from './lib/components/ExerciseScreen.svelte';
   import CelebrateOverlay from './lib/components/CelebrateOverlay.svelte';
   import DesktopLayout from './lib/components/DesktopLayout.svelte';
+  import TopPage from './lib/components/TopPage.svelte';
 
   const DESKTOP_QUERY = '(min-width: 1040px)';
   let isDesktop = $state(false);
 
   function applyRoute(path: string) {
     const route = parseUrl(path);
-    if (route.ci !== null && isUnlocked(route.ci, game.done[route.trail])) {
+    if (route.screen === 'top') {
+      game.toTop();
+    } else if (route.ci !== null && isUnlocked(route.ci, game.done[route.trail])) {
       game.openChapter(route.ci, route.trail);
       if (route.screen === 'ex') game.toEx();
     } else {
@@ -67,7 +70,9 @@
 </script>
 
 <div class="page" style={themeStyle}>
-  {#if isDesktop}
+  {#if game.screen === 'top'}
+    <TopPage freeChapters={isDesktop} />
+  {:else if isDesktop}
     <DesktopLayout />
   {:else}
     <div class="frame">

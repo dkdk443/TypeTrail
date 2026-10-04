@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DATA } from './data';
+import { TRAILS } from './trails';
 import { GameState, type LineChip } from './gameState.svelte';
 
 function isKind<K extends LineChip['kind']>(kind: K) {
@@ -137,6 +138,17 @@ describe('GameState: navigation', () => {
     g.celebrating = true;
     g.toMap();
     expect(g.screen).toBe('map');
+    expect(g.celebrating).toBe(false);
+  });
+
+  it('toTop shows the top page and snaps back to the TypeTrail trail/theme', () => {
+    const g = new GameState();
+    g.setTrail('js');
+    g.celebrating = true;
+    g.toTop();
+    expect(g.screen).toBe('top');
+    expect(g.trail).toBe('ts');
+    expect(g.theme).toBe(TRAILS.ts.theme);
     expect(g.celebrating).toBe(false);
   });
 

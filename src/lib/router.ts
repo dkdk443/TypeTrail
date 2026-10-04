@@ -8,16 +8,21 @@ export interface Route {
 }
 
 const TRAIL_PREFIX: Record<TrailKey, string> = { ts: '', js: '/js' };
+const MAP_PATH: Record<TrailKey, string> = { ts: '/map', js: '/js' };
 
 /** Serializes the current trail/chapter/screen into a shareable, reloadable URL path. */
 export function urlFor(trail: TrailKey, screen: Screen, ci: number): string {
+  if (screen === 'top') return '/';
+  if (screen === 'map') return MAP_PATH[trail];
   const prefix = TRAIL_PREFIX[trail];
-  if (screen === 'map') return prefix || '/';
   const base = `${prefix}/ch/${ci + 1}`;
   return screen === 'ex' ? `${base}/ex` : base;
 }
 
-/** Parses a URL path back into a trail/chapter/screen. Unrecognized or out-of-range paths fall back to that trail's map. */
+/**
+ * Parses a URL path back into a trail/chapter/screen. An out-of-range chapter
+ * falls back to that trail's map; any other unrecognized path to the top page.
+ */
 export function parseUrl(path: string): Route {
   const m = path.match(/^(\/js)?\/ch\/(\d+)(\/ex)?\/?$/);
   if (m) {
@@ -28,8 +33,10 @@ export function parseUrl(path: string): Route {
     }
     return { trail, ci: null, screen: 'map' };
   }
-  const trail: TrailKey = path === '/js' || path === '/js/' ? 'js' : 'ts';
-  return { trail, ci: null, screen: 'map' };
+  const p = path.replace(/\/+$/, '');
+  if (p === MAP_PATH.js) return { trail: 'js', ci: null, screen: 'map' };
+  if (p === MAP_PATH.ts) return { trail: 'ts', ci: null, screen: 'map' };
+  return { trail: 'ts', ci: null, screen: 'top' };
 }
 
 /** Mirrors MapScreen's progressive-unlock rule: chapter 0 is always open; later chapters need the previous one cleared. */

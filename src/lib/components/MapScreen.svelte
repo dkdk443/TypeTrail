@@ -25,10 +25,10 @@
 
 <div class="wrap">
   <div class="top">
-    <div class="brand">
+    <button class="brand" onclick={() => game.toTop()} title="トップページへ">
       <div class="badge mono">{trail.badge}</div>
       <div class="name">{trail.label}</div>
-    </div>
+    </button>
     <div class="switcher">
       {#each TRAIL_KEYS as key}
         <button class:on={game.trail === key} onclick={() => game.setTrail(key)}
@@ -91,6 +91,11 @@
     justify-content: space-between;
   }
   .brand {
+    border: none;
+    background: none;
+    padding: 0;
+    color: inherit;
+    cursor: pointer;
     display: flex;
     align-items: center;
     gap: 9px;

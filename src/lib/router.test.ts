@@ -3,9 +3,14 @@ import { TRAILS, TRAIL_KEYS } from './trails';
 import { isUnlocked, parseUrl, urlFor } from './router';
 
 describe('urlFor', () => {
-  it('TypeTrail\'s map screen is the root path', () => {
-    expect(urlFor('ts', 'map', 0)).toBe('/');
-    expect(urlFor('ts', 'map', 5)).toBe('/');
+  it('the top page is the root path', () => {
+    expect(urlFor('ts', 'top', 0)).toBe('/');
+    expect(urlFor('js', 'top', 3)).toBe('/');
+  });
+
+  it('TypeTrail\'s map screen is /map', () => {
+    expect(urlFor('ts', 'map', 0)).toBe('/map');
+    expect(urlFor('ts', 'map', 5)).toBe('/map');
   });
 
   it('JSTrail\'s map screen is /js', () => {
@@ -25,18 +30,28 @@ describe('urlFor', () => {
 });
 
 describe('parseUrl', () => {
-  it('falls back to TypeTrail\'s map for the root path', () => {
-    expect(parseUrl('/')).toEqual({ trail: 'ts', ci: null, screen: 'map' });
+  it('parses the root path as the top page', () => {
+    expect(parseUrl('/')).toEqual({ trail: 'ts', ci: null, screen: 'top' });
   });
 
-  it('recognizes /js as JSTrail\'s map', () => {
+  it('recognizes /map as TypeTrail\'s map and /js as JSTrail\'s map', () => {
+    expect(parseUrl('/map')).toEqual({ trail: 'ts', ci: null, screen: 'map' });
+    expect(parseUrl('/map/')).toEqual({ trail: 'ts', ci: null, screen: 'map' });
     expect(parseUrl('/js')).toEqual({ trail: 'js', ci: null, screen: 'map' });
+    expect(parseUrl('/js/')).toEqual({ trail: 'js', ci: null, screen: 'map' });
   });
 
-  it('falls back to TypeTrail\'s map for anything unrecognized', () => {
-    expect(parseUrl('/whatever')).toEqual({ trail: 'ts', ci: null, screen: 'map' });
-    expect(parseUrl('/ch/')).toEqual({ trail: 'ts', ci: null, screen: 'map' });
-    expect(parseUrl('/ch/abc')).toEqual({ trail: 'ts', ci: null, screen: 'map' });
+  it('falls back to the top page for anything unrecognized', () => {
+    expect(parseUrl('/whatever')).toEqual({ trail: 'ts', ci: null, screen: 'top' });
+    expect(parseUrl('/ch/')).toEqual({ trail: 'ts', ci: null, screen: 'top' });
+    expect(parseUrl('/ch/abc')).toEqual({ trail: 'ts', ci: null, screen: 'top' });
+  });
+
+  it('round-trips the top page and both maps through urlFor', () => {
+    expect(parseUrl(urlFor('ts', 'top', 0))).toEqual({ trail: 'ts', ci: null, screen: 'top' });
+    for (const key of TRAIL_KEYS) {
+      expect(parseUrl(urlFor(key, 'map', 0))).toEqual({ trail: key, ci: null, screen: 'map' });
+    }
   });
 
   it('parses a TypeTrail slide path back to its 0-based chapter index', () => {
