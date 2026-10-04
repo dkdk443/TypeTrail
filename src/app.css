@@ -45,6 +45,8 @@ button {
 
 /* token colors, shared by slide code blocks and exercise lines */
 .tk-kw { color: var(--cKw); }
+.tk-ty { color: var(--cTy); }
+.tk-prop { color: var(--cProp); }
 .tk-str { color: var(--cStr); }
 .tk-num { color: var(--cNum); }
 .tk-pn { color: var(--cPn); }

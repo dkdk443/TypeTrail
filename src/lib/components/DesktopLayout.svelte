@@ -13,8 +13,8 @@
   const pct = $derived(Math.round((doneCount / game.chapters.length) * 100));
   const barPct = $derived(Math.max(pct, 3));
 
-  // Once the open chapter is cleared, the one after it is flagged as "つぎ →".
-  const upNextCi = $derived(done[game.ci] ? game.ci + 1 : -1);
+  // Once the open chapter is cleared, the one after it (if not cleared yet) is flagged as "つぎ →".
+  const upNextCi = $derived(done[game.ci] && !done[game.ci + 1] ? game.ci + 1 : -1);
   const chapters = $derived(
     game.chapters.map((c, i) => {
       const isDone = !!done[i];

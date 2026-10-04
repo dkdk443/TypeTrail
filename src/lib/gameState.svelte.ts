@@ -213,7 +213,8 @@ export class GameState {
   lineChips(i: number, ex: ExerciseSpec = this.ex): LineChip[] {
     const line = ex.lines[i];
     const chips: LineChip[] = [];
-    if (line.pre) tok(line.pre).forEach((c) => chips.push({ kind: 'code', text: c.text, tk: c.kind }));
+    const ctx = { after: line.t[0] ?? line.post };
+    if (line.pre) tok(line.pre, ctx).forEach((c) => chips.push({ kind: 'code', text: c.text, tk: c.kind }));
 
     const built = this.built[i] || [];
     const isCur = this.cur(ex) === i;
@@ -231,7 +232,7 @@ export class GameState {
       for (let k = 0; k < line.t.length; k++) chips.push({ kind: 'slot', state: 'idle' });
     }
 
-    if (line.post) tok(line.post).forEach((c) => chips.push({ kind: 'code', text: c.text, tk: c.kind }));
+    if (line.post) tok(line.post, { before: line.pre + line.t.join(' ') }).forEach((c) => chips.push({ kind: 'code', text: c.text, tk: c.kind }));
     return chips;
   }
 
