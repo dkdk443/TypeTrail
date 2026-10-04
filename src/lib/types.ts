@@ -14,6 +14,12 @@ export interface LineSpec {
 export interface ExerciseSpec {
   file: string;
   goal: string;
+  /**
+   * "やること": plain-language requirements, one per decision the blanks ask for,
+   * shown before solving so a drill-only reader (who skips the slide) knows what
+   * the answer must satisfy. Describe the requirement, not the literal token.
+   */
+  todo: string[];
   lines: LineSpec[];
   pool: string[];
   hint: string;

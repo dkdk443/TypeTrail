@@ -51,6 +51,15 @@ for (const key of TRAIL_KEYS) {
       }
     });
 
+    it('every step\'s exercise lists at least one non-empty "やること" item', () => {
+      for (const c of chapters) {
+        for (const s of c.steps) {
+          expect(s.ex.todo.length, `${c.title} ${s.kicker}`).toBeGreaterThan(0);
+          for (const item of s.ex.todo) expect(item.trim(), `${c.title} ${s.kicker}`).not.toBe('');
+        }
+      }
+    });
+
     it('pool decoys never duplicate that step\'s own correct tokens', () => {
       for (const c of chapters) {
         for (const s of c.steps) {

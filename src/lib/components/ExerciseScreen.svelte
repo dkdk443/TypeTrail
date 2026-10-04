@@ -44,7 +44,14 @@
 
   <div class="goal">
     <div class="goal-dot"></div>
-    <div class="goal-text">{ex.goal}</div>
+    <div class="goal-body">
+      <div class="goal-text">{ex.goal}</div>
+      <ul class="todo">
+        {#each ex.todo as item}
+          <li>{item}</li>
+        {/each}
+      </ul>
+    </div>
   </div>
 
   <div class="body" bind:this={body}>
@@ -195,7 +202,7 @@
   .goal {
     margin: 0 16px 10px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 10px;
     background: var(--card);
     border: 1px solid var(--bd);
@@ -208,6 +215,39 @@
     border-radius: 99px;
     background: var(--ac);
     flex: 0 0 auto;
+    margin-top: 7px;
+  }
+  .goal-body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  /* ex.todo: the plain-language requirements, so the blanks make sense without the slide. */
+  .todo {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .todo li {
+    position: relative;
+    padding-left: 13px;
+    font-size: 11.5px;
+    line-height: 1.6;
+    color: var(--mu);
+  }
+  .todo li::before {
+    content: '';
+    position: absolute;
+    left: 1px;
+    top: 0.65em;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    border: 1px solid var(--ac);
   }
   .goal-text {
     font-size: 12.5px;

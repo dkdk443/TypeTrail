@@ -19,6 +19,7 @@ export const DATA: Chapter[] = [
         note: 'string / number / boolean は全部小文字。大文字始まりの `String` は別モノなので使いません。',
         ex: {
           file: 'annotate.ts', goal: '変数に型注釈をつけよう',
+          todo: ['userName に型注釈をつける（中身は文字列）'],
           lines: [L('let userName', [':', 'string'], ' = "ada";')],
           pool: ['boolean', 'any', 'number'],
           hint: '文字列には string を使います。',
@@ -33,6 +34,7 @@ export const DATA: Chapter[] = [
         note: '迷ったら「引数は書く、変数はまかせる」。これだけで実務のコードはだいぶ読みやすくなります。',
         ex: {
           file: 'annotate.ts', goal: '関数の戻り値にも型注釈をつけよう',
+          todo: ['level に型注釈をつける（中身は数値）', '関数 up の戻り値に型注釈をつける（n + 1 を返す）'],
           lines: [L('let level', [':', 'number'], ' = 12;'),
           L('function up(n: number)', [':', 'number'], ' {'),
           L('  return n + 1;'), L('}')],
@@ -49,6 +51,7 @@ export const DATA: Chapter[] = [
         note: 'この「広げて推論する」ふるまいは widening と呼ばれます。細かい違いですが、リテラル型を使うユニオン型（次の章）を理解する土台になります。',
         ex: {
           file: 'widening.ts', goal: 'widening とリテラル型の違いを型注釈で確認しよう',
+          todo: ['let の a には、再代入できる「広い型」をつける', 'const の b には、値そのものを表す「リテラル型」をつける'],
           lines: [L('let a', [':', 'string'], ' = "hello";'),
           L('const b', [':', '"hello"'], ' = "hello";')],
           pool: ['number', '"world"', 'boolean'],
@@ -70,6 +73,7 @@ export const DATA: Chapter[] = [
         note: '`null` と `undefined` はどちらも「値がない」を表しますが、null は「意図的に空」、undefined は「まだ値が入っていない」というニュアンスの違いがあります。',
         ex: {
           file: 'primitives.ts', goal: 'プリミティブ型で変数に型をつけよう',
+          todo: ['name・age・active に、それぞれの値に合うプリミティブ型をつける'],
           lines: [L('let name', [':', 'string'], ' = "ada";'),
           L('let age', [':', 'number'], ' = 30;'),
           L('let active', [':', 'boolean'], ' = true;')],
@@ -86,6 +90,7 @@ export const DATA: Chapter[] = [
         note: 'リテラル型は enum の代わりとしてもよく使われます。文字列のまま比較できるので扱いやすいです。',
         ex: {
           file: 'status.ts', goal: 'リテラル型のユニオンで Status を定義しよう',
+          todo: ['Status は "idle"・"loading"・"done" のどれかだけを許す型にする', 'current と、next の戻り値を Status 型にする', 's が "idle" かどうかを、厳密等価で比べる'],
           lines: [L('type Status = ', ['"idle"', '|', '"loading"', '|', '"done"'], ';', 0),
           L('let current', [':', 'Status'], ' = "idle";'),
           L('function next(s: Status)', [':', 'Status'], ' {'),
@@ -110,6 +115,7 @@ export const DATA: Chapter[] = [
         note: '配列に別の型の値を push しようとすると、その場でエディタが赤線を出してくれます。',
         ex: {
           file: 'collections.ts', goal: '配列に型をつけよう',
+          todo: ['scores は数値の配列、names は文字列の配列として型をつける'],
           lines: [L('let scores', [':', 'number[]'], ' = [80, 92, 76];'),
           L('let names', [':', 'string[]'], ' = ["ada", "grace"];')],
           pool: ['Array<number>', 'any[]', 'object'],
@@ -124,6 +130,7 @@ export const DATA: Chapter[] = [
         note: '3つ目以降の要素を増やしたいときは `[string, number, boolean]` のように型を並べて増やします。',
         ex: {
           file: 'collections.ts', goal: 'タプルに型をつけよう',
+          todo: ['pair は「文字列、数値」の順で2つ並ぶタプルにする', 'first は pair の先頭（文字列）を返すので、戻り値に型をつける'],
           lines: [L('let pair', [':', '[string, number]'], ' = ["ada", 30];'),
           L('function first(p: [string, number])', [':', 'string'], ' {'),
           L('  return p[0];'), L('}')],
@@ -146,6 +153,7 @@ export const DATA: Chapter[] = [
         note: '直接オブジェクトリテラルを代入する場合だけは「余分なプロパティ」がエラーになります（過剰プロパティチェック）。',
         ex: {
           file: 'point.ts', goal: '構造的型付けにそって Point インターフェースを宣言しよう',
+          todo: ['Point という名前で、オブジェクトの形を表す interface を宣言する', 'x と y はどちらも数値'],
           lines: [L('', ['interface', 'Point'], ' {'),
           L('  x', [':', 'number'], ';'),
           L('  y', [':', 'number'], ';'),
@@ -162,6 +170,7 @@ export const DATA: Chapter[] = [
         note: '同じ形を何度も書くなら interface か型エイリアスにまとめたほうが読みやすくなります。',
         ex: {
           file: 'point.ts', goal: 'その場で書いたオブジェクト型で関数を書こう',
+          todo: ['引数 p の型を、名前をつけずにその場でオブジェクト型として書く（x と y は数値）'],
           lines: [L('function dist(p', [':', '{ x: number; y: number }'], ') {'),
           L('  return Math.sqrt(p.x ** 2 + p.y ** 2);'), L('}')],
           pool: ['Point', 'void', 'any'],
@@ -182,6 +191,7 @@ export const DATA: Chapter[] = [
         note: 'この状態では `v.toUpperCase()` は書けません。number の可能性が残っているからです。',
         ex: {
           file: 'guard.ts', goal: 'ユニオン型で引数を受け取ろう',
+          todo: ['引数 v に、文字列でも数値でも受け取れる型をつける'],
           lines: [L('function show(v', [':', 'string', '|', 'number'], ') {', 1),
           L('  // v は string かも number かも'), L('}')],
           pool: ['&', 'boolean', 'any'],
@@ -197,6 +207,7 @@ export const DATA: Chapter[] = [
         note: 'if を抜けた後は number だと確定するので、toFixed が使えます。',
         ex: {
           file: 'guard.ts', goal: 'typeof で型を絞り込もう',
+          todo: ['v が文字列かどうかを、typeof で調べる条件を書く（比較は厳密等価）'],
           lines: [L('function show(v: string | number) {'),
           L('  if (', ['typeof', 'v', '===', '"string"'], ') {'),
           L('    return v.toUpperCase();'),
@@ -221,6 +232,7 @@ export const DATA: Chapter[] = [
         note: '目印にはリテラル型（`"circle"` のような固定文字列）を使うのがポイントです。',
         ex: {
           file: 'shape.ts', goal: '判別子つきのユニオン型を作ろう',
+          todo: ['Circle の kind は "circle" という値だけを許す', 'Square の kind は "square" という値だけを許す', 'Shape は Circle か Square のどちらか'],
           lines: [L('interface Circle { kind', [':', '"circle"'], '; radius: number; }'),
           L('interface Square { kind', [':', '"square"'], '; side: number; }'),
           L('type Shape', ['=', 'Circle', '|', 'Square'], ';', 1)],
@@ -236,6 +248,7 @@ export const DATA: Chapter[] = [
         note: 'if / else でも同じことができますが、選択肢が3つ以上になったら switch の方が読みやすくなります。',
         ex: {
           file: 'shape.ts', goal: 'switch で型を絞り込んで面積を計算しよう',
+          todo: ['area の戻り値に型をつける（面積は数値）'],
           lines: [L('function area(shape: Shape)', [':', 'number'], ' {'),
           L('  switch (shape.kind) {'),
           L('    case "circle": return Math.PI * shape.radius ** 2;'),
@@ -259,6 +272,7 @@ export const DATA: Chapter[] = [
         note: '`?:` は「あってもなくてもいい」。nickname の型は string | undefined になります。',
         ex: {
           file: 'user.ts', goal: 'User インターフェースを宣言しよう',
+          todo: ['User という名前の interface を宣言する', 'id は数値', 'nickname は「なくてもいい」プロパティにする（あるときは文字列）'],
           lines: [L('', ['interface', 'User'], ' {'),
           L('  id', [':', 'number'], ';'),
           L('  name: string;'),
@@ -277,6 +291,7 @@ export const DATA: Chapter[] = [
         note: 'interface は同じ名前で後から追加できる（宣言のマージ）という違いもあります。',
         ex: {
           file: 'user.ts', goal: 'type エイリアスでユニオン型と関数型に名前をつけよう',
+          todo: ['Role は "admin" か "member" のどちらかだけを許す型にする', 'Formatter は「User を受け取って文字列を返す関数」の型にする'],
           lines: [L('type Role', ['=', '"admin"', '|', '"member"'], ';', 1),
           L('type Formatter', ['=', '(u: User) => string'], ';')],
           pool: ['interface', 'Role[]', 'boolean'],
@@ -298,6 +313,7 @@ export const DATA: Chapter[] = [
         note: '`<HTMLDivElement>el` という書き方もありますが、JSX と衝突するので `as` の方が主流です。',
         ex: {
           file: 'assertion.ts', goal: 'as で型アサーションをしよう',
+          todo: ['getElementById の結果を、div 要素の型として扱うよう指定する'],
           lines: [L('const el = document.getElementById("app")', ['as', 'HTMLDivElement'], ';'),
           L('el.style.color = "red";')],
           pool: ['unknown', 'typeof', 'keyof'],
@@ -313,6 +329,7 @@ export const DATA: Chapter[] = [
         note: 'as const を外すと colors の型はただの string[] になり、要素の絞り込みが失われます。',
         ex: {
           file: 'assertion.ts', goal: 'as const でユニオン型のもとになる配列を作ろう',
+          todo: ['colors を "red"・"green"・"blue" の配列にして、中身を書き換えられないよう固定する', 'Color は colors の要素のどれか、というユニオン型にする', 'picked を Color 型にする'],
           lines: [L('const colors', ['=', '["red", "green", "blue"]', 'as const'], ';'),
           L('type Color', ['=', 'typeof colors[number]'], ';'),
           L('let picked', [':', 'Color'], ' = "green";'),
@@ -335,6 +352,7 @@ export const DATA: Chapter[] = [
         note: '`constructor(private name: string) {}` のように書くと、プロパティ宣言と代入を1行にまとめられます。',
         ex: {
           file: 'user-class.ts', goal: 'クラスのプロパティに型をつけよう',
+          todo: ['name プロパティに型をつける（constructor で文字列が入る）'],
           lines: [L('class User {'),
           L('  name', [':', 'string'], ';'),
           L('  constructor(name: string) {'),
@@ -352,6 +370,7 @@ export const DATA: Chapter[] = [
         note: 'interface 自体は実装を持たず「約束」だけを表します。実装するのはクラス側の役目です。',
         ex: {
           file: 'user-class.ts', goal: 'interface を実装するクラスを書こう',
+          todo: ['greet() の戻り値は文字列', 'User クラスが Greetable の約束を満たすことを宣言する', 'constructor で受け取る name は文字列'],
           lines: [L('interface Greetable {'),
           L('  greet()', [':', 'string'], ';'),
           L('}'),
@@ -379,6 +398,7 @@ export const DATA: Chapter[] = [
         note: '`private` は同じクラスの中だけ、`protected` はそのクラスと継承先のクラスの中まで、`public` はどこからでもアクセスできます。',
         ex: {
           file: 'wallet.ts', goal: 'private でプロパティを守ろう',
+          todo: ['balance を、クラスの外から触れないプロパティにする', 'deposit は何も返さないメソッドなので、それを表す戻り値の型をつける'],
           lines: [L('class Wallet {'),
           L('  ', ['private', 'balance'], ': number;'),
           L('  constructor(amount: number) {'),
@@ -400,6 +420,7 @@ export const DATA: Chapter[] = [
         note: 'readonly はコンパイル時のチェックです。実行時に書き換えを止めているわけではありません。',
         ex: {
           file: 'user-readonly.ts', goal: 'private readonly で書き換え不可にしよう',
+          todo: ['id を、クラスの外から触れず、一度入れたら書き換えられないプロパティにする'],
           lines: [L('class User {'),
           L('  ', ['private', 'readonly', 'id'], ': string;'),
           L('  constructor(id: string) {'),
@@ -424,6 +445,7 @@ export const DATA: Chapter[] = [
         note: 'サブクラスのコンストラクタの中で `super()` を呼ぶ前は this を使えません。',
         ex: {
           file: 'animals.ts', goal: 'extends でクラスを継承しよう',
+          todo: ['Dog が Animal を継承するように書く'],
           lines: [L('class Animal {'),
           L('  constructor(public name: string) {}'),
           L('  speak() { return "..."; }'),
@@ -444,6 +466,7 @@ export const DATA: Chapter[] = [
         note: '抽象クラスは interface と似ていますが、実装済みのメソッド（ここでは describe）も一緒に持たせられるのが違いです。',
         ex: {
           file: 'shapes.ts', goal: '抽象クラスを継承して面積を計算しよう',
+          todo: ['Shape を、直接 new できない抽象クラスにする', 'area を、中身を子クラスに任せる抽象メソッドにする', 'describe の戻り値は文字列、Square の area の戻り値は数値', 'Square が Shape を継承するように書く'],
           lines: [L('', ['abstract', 'class'], ' Shape {'),
           L('  ', ['abstract'], ' area(): number;'),
           L('  describe()', [':', 'string'], ' {'),
@@ -475,6 +498,7 @@ export const DATA: Chapter[] = [
         note: '`any` は「チェックしないで」の宣言。使うほど TS の旨みが減っていきます。',
         ex: {
           file: 'generic.ts', goal: 'まずは string 専用の first 関数を書こう',
+          todo: ['引数 items に「文字列の配列」の型をつける'],
           lines: [L('function first(items', [':', 'string[]'], '): string {'),
           L('  return items[0];'), L('}')],
           pool: ['any', 'number[]', 'void'],
@@ -490,6 +514,7 @@ export const DATA: Chapter[] = [
         note: '空配列なら何も返らないので、戻り値に `undefined` を足しておくのが安全です。',
         ex: {
           file: 'generic.ts', goal: '型を受け取る関数に書きかえよう',
+          todo: ['first が型引数 T を受け取るようにする', 's には first(tags) が返しうる型をつける（文字列。ただし空配列なら値がない）'],
           lines: [L('function first', ['<', 'T', '>'], '(items: T[]): T | undefined {'),
           L('  return items[0];'), L('}'),
           L('const s', [':', 'string', '|', 'undefined'], ' = first(tags);', 1)],
@@ -511,6 +536,7 @@ export const DATA: Chapter[] = [
         note: 'ここでの `extends` は継承ではなく「この形を満たすこと」という制約の意味で使われています。',
         ex: {
           file: 'safe-get.ts', goal: '型引数に制約をつけよう',
+          todo: ['T を「数値の length プロパティを持つもの」に制約する'],
           lines: [L('function getLength<T', ['extends', '{ length: number }'], '>(x: T) {'),
           L('  return x.length;'), L('}')],
           pool: ['implements', 'keyof T', 'in'],
@@ -525,6 +551,7 @@ export const DATA: Chapter[] = [
         note: 'K を keyof T で制約しているので、存在しないキー名を渡すとその場でエラーになります。',
         ex: {
           file: 'safe-get.ts', goal: 'keyof で制約したジェネリクス関数を書こう',
+          todo: ['K を、T のキーのどれかに制約する', 'user は id が 1、name が "ada" のオブジェクトにする', 'get で user の name を取り出す'],
           lines: [L('function get<T, K', ['extends', 'keyof T'], '>(obj: T, key: K) {'),
           L('  return obj[key];'),
           L('}'),
@@ -548,6 +575,7 @@ export const DATA: Chapter[] = [
         note: '`Partial<User>` は「User だけど全部 ? つき」という意味になります。フォームの入力途中を表すのに便利です。',
         ex: {
           file: 'utility.ts', goal: 'Partial と Pick で型を作ろう',
+          todo: ['DraftUser は、User の全プロパティを省略可能にした型', 'UserPreview は、User から id と name だけを取り出した型'],
           lines: [L('interface User { id: number; name: string; email: string; }'),
           L('type DraftUser', ['=', 'Partial<User>'], ';'),
           L('type UserPreview', ['=', 'Pick<User', ',', '"id" | "name">'], ';')],
@@ -563,6 +591,7 @@ export const DATA: Chapter[] = [
         note: 'Record<K, V> も覚えておくと便利です。「キーが K、値が V のオブジェクト」をまとめて表せます。',
         ex: {
           file: 'utility.ts', goal: 'Omit で除外した型を作ろう',
+          todo: ['PublicUser は、User から email だけを除いた型'],
           lines: [L('type PublicUser', ['=', 'Omit<User', ',', '"email">'], ';')],
           pool: ['Pick<User', 'Record<User>', 'in'],
           hint: 'これを除いた残り全部、というときは Omit です。',
@@ -582,6 +611,7 @@ export const DATA: Chapter[] = [
         note: 'items が何の配列なのか、コードからは分かりません。ここに型をつけていきます。',
         ex: {
           file: 'cart.ts', goal: '配列の引数に型をつけよう',
+          todo: ['引数 items に「Item の配列」の型をつける'],
           lines: [L('function total(items', [':', 'Item', '[]'], ') {'),
           L('  return items.reduce('),
           L('    (sum, item) => sum + item.price,'),
@@ -598,6 +628,7 @@ export const DATA: Chapter[] = [
         note: 'sum に number をつけると、reduce の初期値 0 とも噛み合って全体が number に確定します。',
         ex: {
           file: 'cart.ts', goal: 'コールバックの引数にも型をつけよう',
+          todo: ['コールバックの1つ目 sum（ここまでの合計）は数値', '2つ目の item は Item 型'],
           lines: [L('function total(items: Item[]) {'),
           L('  return items.reduce('),
           L('    (sum', [':', 'number', ',', 'item', ':', 'Item'], ') => sum + item.price,'),

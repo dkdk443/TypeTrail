@@ -173,6 +173,14 @@
           </div>
         </div>
         <div class="goal-text">{ex.goal}</div>
+        <div class="todo">
+          <div class="todo-label">やること</div>
+          <ul>
+            {#each ex.todo as item}
+              <li>{item}</li>
+            {/each}
+          </ul>
+        </div>
         <div class="fill-bar"><div class="fill-bar-in" style="width:{fillPct}%"></div></div>
       </div>
 
@@ -660,6 +668,42 @@
     line-height: 1.5;
     color: var(--cFg);
     text-wrap: pretty;
+  }
+  .todo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .todo-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--cPn);
+  }
+  .todo ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .todo li {
+    position: relative;
+    padding-left: 16px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--cFg);
+  }
+  .todo li::before {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 0.62em;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ac2);
   }
   .fill-bar {
     height: 4px;
