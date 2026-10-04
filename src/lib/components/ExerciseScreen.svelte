@@ -6,6 +6,15 @@
   const cur = $derived(game.cur());
   const allDone = $derived(cur === undefined);
   const readyForNextStep = $derived(allDone && !game.isLastStep());
+  // Last step solved, chapter cleared, overlay dismissed ("コードを見なおす").
+  const reviewing = $derived(
+    allDone && game.isLastStep() && !!game.done[game.trail][game.ci] && !game.celebrating
+  );
+  const nextChapter = $derived(game.chapters[game.ci + 1]);
+
+  // ex.out[0] is always the "✓ ..." verdict line; the rest are result lines.
+  const passTitle = $derived(ex.out[0]?.replace(/^✓\s*/, '') ?? '');
+  const passLines = $derived(ex.out.slice(1));
 
   let body: HTMLDivElement | undefined = $state();
   $effect(() => {
@@ -91,20 +100,6 @@
       </div>
     {/if}
 
-    {#if allDone}
-      <div class="output">
-        <div class="output-label">じっこうけっか</div>
-        <div class="output-lines">
-          {#each ex.out as line}
-            <div class="output-line mono">{line}</div>
-          {/each}
-        </div>
-        {#if readyForNextStep}
-          <button class="next-step" onclick={() => game.nextStep()}>次のステップへ</button>
-        {/if}
-      </div>
-    {/if}
-
     {#if game.hint}
       <div class="hint-panel">
         <div class="hint-label">ヒント</div>
@@ -113,23 +108,65 @@
     {/if}
   </div>
 
-  <div class="footer">
-    <div class="footer-top">
-      <div class="palette-label">パレット</div>
-      <div class="feedback" class:bad={game.status === 'ng'}>{feedbackText}</div>
+  {#if reviewing}
+    <div class="band review">
+      <div class="band-head">
+        <div class="band-mark review-mark">✓</div>
+        <div class="band-body">
+          <div class="band-title">この章はクリア済み</div>
+          <div class="band-sub">
+            {nextChapter ? `つぎ：${nextChapter.num} ${nextChapter.title}` : 'すべてのチャプターをクリアしました'}
+          </div>
+        </div>
+      </div>
+      {#if nextChapter}
+        <button class="band-go review-go" onclick={() => game.celebrateNext()}>つぎのレッスンへ →</button>
+      {:else}
+        <button class="band-go review-go" onclick={() => game.toTop()}>トップページへ</button>
+      {/if}
+      <div class="band-links">
+        {#if game.sl > 0}
+          <button onclick={() => game.prevStep()}>‹ 前のステップ</button>
+        {:else}
+          <span></span>
+        {/if}
+        <button class="replay" onclick={() => game.replayCelebration()}>結果をもう一度</button>
+      </div>
     </div>
-    <div class="palette">
-      {#each palette as t}
-        <button class="mono" onclick={() => game.tap(t)}>{t}</button>
-      {/each}
+  {:else if allDone}
+    <div class="band pass">
+      <div class="band-head">
+        <div class="band-mark">✓</div>
+        <div class="band-body">
+          <div class="band-title">{passTitle}</div>
+          {#each passLines as line}
+            <div class="band-out mono">{line}</div>
+          {/each}
+        </div>
+      </div>
+      {#if readyForNextStep}
+        <button class="band-go" onclick={() => game.nextStep()}>次のステップへ</button>
+      {/if}
     </div>
-    <div class="actions">
-      <button class="ghost" onclick={() => game.backspace()}>⌫</button>
-      <button class="ghost wide" onclick={() => game.toggleHint()}>{game.hint ? 'ヒントを閉じる' : 'ヒント'}</button>
-      <div class="spacer"></div>
-      <button class="reveal" onclick={() => game.reveal()}>答えを見る</button>
+  {:else}
+    <div class="footer">
+      <div class="footer-top">
+        <div class="palette-label">パレット</div>
+        <div class="feedback" class:bad={game.status === 'ng'}>{feedbackText}</div>
+      </div>
+      <div class="palette">
+        {#each palette as t}
+          <button class="mono" onclick={() => game.tap(t)}>{t}</button>
+        {/each}
+      </div>
+      <div class="actions">
+        <button class="ghost" onclick={() => game.backspace()}>⌫</button>
+        <button class="ghost wide" onclick={() => game.toggleHint()}>{game.hint ? 'ヒントを閉じる' : 'ヒント'}</button>
+        <div class="spacer"></div>
+        <button class="reveal" onclick={() => game.reveal()}>答えを見る</button>
+      </div>
     </div>
-  </div>
+  {/if}
 </div>
 
 <style>
@@ -353,44 +390,6 @@
     min-height: 32px;
     font-size: 15px;
   }
-  .output {
-    margin-top: 12px;
-    border-radius: 18px;
-    background: var(--okBg);
-    border: 1px solid var(--okBd);
-    padding: 15px 16px;
-    animation: ttRise 0.3s ease both;
-  }
-  .output-label {
-    font-size: 10.5px;
-    font-weight: 700;
-    letter-spacing: 0.12em;
-    color: var(--okFg);
-  }
-  .output-lines {
-    margin-top: 9px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  .output-line {
-    font-size: 12px;
-    line-height: 1.7;
-    color: var(--okFg);
-  }
-  .next-step {
-    margin-top: 13px;
-    width: 100%;
-    min-height: 46px;
-    border-radius: 13px;
-    border: none;
-    cursor: pointer;
-    font-size: 13.5px;
-    font-weight: 700;
-    color: var(--okFg);
-    background: var(--sf);
-    border: 1px solid var(--okBd);
-  }
   .hint-panel {
     margin-top: 12px;
     border-radius: 16px;
@@ -410,6 +409,102 @@
     font-size: 12.5px;
     line-height: 1.9;
     color: var(--fg);
+  }
+  /* Post-solve band that replaces the palette — mirrors DesktopLayout's .pass / .review. */
+  .band {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 18px 16px 24px;
+    animation: ttRise 0.3s ease both;
+  }
+  .band.pass {
+    background: var(--okBg);
+    border-top: 2px solid var(--okBd);
+  }
+  .band.review {
+    background: color-mix(in oklch, var(--ac) 22%, var(--code));
+    border-top: 2px solid var(--ac);
+  }
+  .band-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .band-mark {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--ac2);
+    color: var(--ac2Fg);
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .band-mark.review-mark {
+    background: var(--ac);
+    color: var(--acFg);
+  }
+  .band-body {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .band-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--okFg);
+  }
+  .band.review .band-title {
+    color: var(--cFg);
+  }
+  .band-out {
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.6;
+    color: var(--okFg);
+    opacity: 0.85;
+    overflow-wrap: anywhere;
+  }
+  .band-sub {
+    font-size: 12.5px;
+    color: var(--cKw);
+  }
+  .band-go {
+    min-height: 52px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--ac2Fg);
+    background: var(--ac2);
+  }
+  .band-go.review-go {
+    color: var(--acFg);
+    background: var(--ac);
+  }
+  .band-links {
+    display: flex;
+    justify-content: space-between;
+  }
+  .band-links button {
+    padding: 4px 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--cFg);
+    opacity: 0.8;
+  }
+  .band-links .replay {
+    text-decoration: underline;
+    text-underline-offset: 3px;
   }
   .footer {
     flex: 0 0 auto;
